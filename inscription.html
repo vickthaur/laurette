@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulaire Terrain - Inscription Donneur</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        laurette: '#5e227f',
+                        laurette_dark: '#3c1254',
+                        flavy: '#b4d429',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .success-animation {
+            animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.9) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+
+    <div id="form-card" class="max-w-xl w-full bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden transition-all duration-500">
+        
+        <div class="bg-laurette p-6 text-white text-center relative">
+            <div class="absolute top-4 left-6 flex items-center gap-2">
+                <div class="w-2 h-2 bg-flavy rounded-full animate-ping"></div>
+                <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">Mode Terrain Actif</span>
+            </div>
+            <h1 class="text-2xl font-black mt-2">Nouveau Donneur</h1>
+            <p class="text-white/70 text-sm font-medium">BDS INSA Lyon × Laurette Fugain</p>
+        </div>
+
+        <form id="donor-form" class="p-8 space-y-6">
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Prénom</label>
+                    <input type="text" placeholder="ex: Jean" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-laurette focus:bg-white outline-none transition-all">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Nom</label>
+                    <input type="text" placeholder="ex: Dupont" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-laurette focus:bg-white outline-none transition-all">
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Adresse Email Étudiante</label>
+                <div class="relative">
+                    <input type="email" placeholder="nom@ecole.fr" required class="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-laurette focus:bg-white outline-none transition-all">
+                    <svg class="w-5 h-5 text-gray-300 absolute left-4 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Téléphone (Optionnel)</label>
+                <input type="tel" placeholder="06 .. .. .. .." class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-laurette focus:bg-white outline-none transition-all">
+            </div>
+
+            <div class="bg-laurette/5 p-4 rounded-2xl border border-laurette/10">
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" required class="mt-1 h-5 w-5 rounded border-gray-300 text-laurette focus:ring-laurette">
+                    <span class="text-xs text-laurette_dark/80 leading-relaxed font-medium">
+                        Je consens à être recontacté par l'association <strong>Laurette Fugain</strong> pour finaliser mon inscription sur le registre national des donneurs de moelle osseuse.
+                    </span>
+                </label>
+            </div>
+
+            <button type="submit" class="w-full bg-laurette text-white font-black py-4 rounded-2xl shadow-lg hover:bg-laurette_dark transform active:scale-95 transition-all text-lg">
+                Inscrire le donneur
+            </button>
+        </form>
+
+        <div id="success-view" class="hidden p-12 text-center space-y-6 success-animation">
+            <div class="w-20 h-20 bg-flavy rounded-full flex items-center justify-center mx-auto shadow-lg shadow-flavy/20">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <div class="space-y-2">
+                <h2 class="text-2xl font-black text-gray-900">Inscription Validée !</h2>
+                <p class="text-gray-500 font-medium">Un email de suivi automatisé a été envoyé pour finaliser le dossier.</p>
+            </div>
+            <button onclick="window.location.reload()" class="inline-block text-laurette font-bold border-b-2 border-laurette pb-1 hover:text-laurette_dark transition">
+                Nouvelle inscription
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        document.getElementById('donor-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            document.getElementById('donor-form').classList.add('hidden');
+            document.getElementById('success-view').classList.remove('hidden');
+            // Le code ici enverrait normalement la donnée à Supabase
+        });
+    </script>
+
+</body>
+</html>
