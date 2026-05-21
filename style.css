@@ -1,0 +1,118 @@
+/**
+ * ============================================================
+ * LAURETTE FUGAIN × BDS — Styles Globaux & Animations
+ * ============================================================
+ */
+
+/* Importation de la typographie (Sécurité supplémentaire au cas où le HTML rate) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    /* Empêche l'effet de rebond sur Mac/iOS pour faire plus "Application Native" */
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==========================================
+   SCROLLBARS PERSONNALISÉES
+   ========================================== */
+   
+/* Scrollbar globale */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #e5e7eb; /* gray-200 */
+    border-radius: 20px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #d1d5db; /* gray-300 */
+}
+
+/* Scrollbar très discrète pour la Sidebar */
+#sidebar-nav::-webkit-scrollbar {
+    width: 4px;
+}
+#sidebar-nav::-webkit-scrollbar-thumb {
+    background-color: transparent;
+}
+#sidebar-nav:hover::-webkit-scrollbar-thumb {
+    background-color: #e5e7eb;
+}
+
+/* ==========================================
+   ANIMATIONS & TRANSITIONS UI
+   ========================================== */
+
+/* 1. Animation d'entrée des vues (Dashboard, Events, FAQ...) */
+.view-section:not(.hidden) {
+    animation: fadeInSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 2. Animations de la Modale (Création d'événement) */
+#modal-event:not(.hidden) #modal-event-backdrop {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+#modal-event:not(.hidden) .transform {
+    animation: modalPop 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modalPop {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* 3. Animation douce pour le texte de la FAQ */
+.faq-content:not(.hidden) {
+    animation: fadeIn 0.25s ease-out forwards;
+}
+
+/* ==========================================
+   UTILITAIRES SPECIFIQUES
+   ========================================== */
+
+/* Eviter que le texte des boutons soit sélectionnable */
+button, .nav-item {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Effet de focus propre (Accessibilité) */
+*:focus-visible {
+    outline: 2px solid #5e227f;
+    outline-offset: 2px;
+}
