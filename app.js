@@ -7,12 +7,13 @@
 // ==========================================
 // 1. SUPABASE & ÉTAT GLOBAL
 // ==========================================
-const SUPABASE_URL  = "https://lhelfggczeybornhemsf.supabase.co/rest/v1/";
-const SUPABASE_KEY  = "sb_publishable_rvOSgbkjsZRcwGCenkzY_g_5am-b6dk";
+const SUPABASE_URL  = 'https://lhelfggczeybornhemsf.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_rvOSgbkjsZRcwGCenkzY_g_5am-b6dk';
 
-let supabase;
+let _sb;
 try {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    window._sbClient = _sb; // exposé globalement pour handleLogin()
 } catch(e) {
     console.error('Supabase init failed:', e);
 }
@@ -151,8 +152,8 @@ function setupEventListeners() {
             btn.disabled = true;
             DOM.auth.errorContainer.classList.add('hidden');
 
-            if (!supabase) { Toast.show('Serveur inaccessible.', 'error'); btn.innerHTML = 'Accéder à mon espace'; btn.disabled = false; return; }
-            const { error } = await supabase.auth.signInWithPassword({
+            if (!_sb) { Toast.show('Serveur inaccessible.', 'error'); btn.innerHTML = 'Accéder à mon espace'; btn.disabled = false; return; }
+            const { error } = await _sb.auth.signInWithPassword({
                 email:    DOM.auth.email.value.trim(),
                 password: DOM.auth.password.value,
             });
@@ -197,7 +198,7 @@ function setupEventListeners() {
     // --- Logout ---
     if (DOM.sidebar.logoutBtn) {
         DOM.sidebar.logoutBtn.addEventListener('click', async () => {
-            await supabase.auth.signOut();
+            await _sb.auth.signOut();
         });
     }
 
@@ -220,7 +221,7 @@ function setupEventListeners() {
             em.btnSubmit.disabled = true;
             em.btnSubmit.innerHTML = `<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Création…`;
 
-            const { error } = await supabase.from('events').insert([{
+            const { error } = await _sb.from('events').insert([{
                 title:                  document.getElementById('event-title').value,
                 event_date:             document.getElementById('event-date').value,
                 type:                   document.getElementById('event-type').value,
@@ -270,7 +271,7 @@ function setupEventListeners() {
                 event_id:   eventId || null,
             };
 
-            const { error } = await supabase.from('registrations').insert([payload]);
+            const { error } = await _sb.from('registrations').insert([payload]);
 
             btn.disabled = false;
             btn.innerHTML = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Inscrire le donneur`;
@@ -338,14 +339,14 @@ function closeRegistrationModal() {
 // ==========================================
 async function checkActiveSession() {
     // Si Supabase n'est pas initialisé, on affiche juste l'auth
-    if (!supabase) {
+    if (!_sb) {
         DOM.auth.errorText.textContent = 'Erreur : impossible de contacter le serveur.';
         DOM.auth.errorContainer.classList.remove('hidden');
         return; // view-auth est déjà visible par défaut
     }
 
     try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await _sb.auth.getSession();
         if (error) throw error;
         if (session) {
             await onSignIn(session.user);
@@ -358,8 +359,8 @@ async function checkActiveSession() {
         // view-auth est déjà visible, rien à faire
     }
 
-    if (!supabase) return;
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    if (!_sb) return;
+    _sb.auth.onAuthStateChange(async (event, session) => {
         if (event === 'SIGNED_IN' && session) {
             await onSignIn(session.user);
         } else if (event === 'SIGNED_OUT') {
@@ -426,7 +427,7 @@ function navigateTo(viewName) {
 // ==========================================
 async function loadUserProfile() {
     if (!State.user) return;
-    const { data, error } = await supabase
+    const { data, error } = _sb
         .from('profiles')
         .select(`*, bds (name, city)`)
         .eq('id', State.user.id)
@@ -447,14 +448,14 @@ async function loadDashboardData() {
     const bdsId = State.profile.bds_id;
 
     // Events count
-    const { count: eventsCount } = await supabase.from('events')
+    const { count: eventsCount } = await _sb.from('events')
         .select('*', { count: 'exact', head: true })
         .eq('bds_id', bdsId)
         .in('status', ['planned', 'confirmed']);
     DOM.dashboard.eventCount.textContent = eventsCount ?? 0;
 
     // Registrations count + progress
-    const { count: regCount } = await supabase.from('registrations')
+    const { count: regCount } = await _sb.from('registrations')
         .select('*', { count: 'exact', head: true })
         .eq('bds_id', bdsId)
         .eq('status', 'validated');
@@ -474,7 +475,7 @@ async function loadDashboardData() {
     await computeRank(bdsId, count);
 
     // Upcoming events
-    const { data: recentEvents } = await supabase.from('events')
+    const { data: recentEvents } = await _sb.from('events')
         .select('title, event_date, type, actual_registrations, expected_registrations')
         .eq('bds_id', bdsId)
         .in('status', ['planned', 'confirmed'])
@@ -509,7 +510,7 @@ async function loadDashboardData() {
 
 async function computeRank(bdsId, myCount) {
     // Get total for each BDS and determine rank
-    const { data: allCounts } = await supabase
+    const { data: allCounts } = _sb
         .from('registrations')
         .select('bds_id')
         .eq('status', 'validated');
@@ -575,7 +576,7 @@ function buildPath(values, max, close) {
 async function loadEventsData(updateState = true) {
     if (!State.profile?.bds_id) return;
 
-    const { data, error } = await supabase.from('events')
+    const { data, error } = await _sb.from('events')
         .select('*')
         .eq('bds_id', State.profile.bds_id)
         .order('event_date', { ascending: false });
@@ -636,7 +637,7 @@ async function loadEventsData(updateState = true) {
 async function loadRegistrationsData() {
     if (!State.profile?.bds_id) return;
 
-    const { data, error } = await supabase.from('registrations')
+    const { data, error } = await _sb.from('registrations')
         .select('*, events(title, event_date)')
         .eq('bds_id', State.profile.bds_id)
         .order('created_at', { ascending: false });
@@ -728,7 +729,7 @@ function exportRegistrationsCSV() {
 
 // --- Leaderboard ---
 async function loadLeaderboardData() {
-    const { data: allRegs } = await supabase
+    const { data: allRegs } = _sb
         .from('registrations')
         .select('bds_id, bds(name, city)')
         .eq('status', 'validated');
@@ -833,7 +834,7 @@ function renderPodium(sorted, myBdsId) {
 // --- FAQ ---
 async function loadFAQData() {
     if (State.faqs.length === 0) {
-        const { data } = await supabase.from('faq_items')
+        const { data } = await _sb.from('faq_items')
             .select('*')
             .eq('is_active', true)
             .order('order_index', { ascending: true });
