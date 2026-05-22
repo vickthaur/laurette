@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Classement National - Flavy Code</title>
-    
+    <title>Classement National — Flavy Code</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -16,176 +17,353 @@
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        laurette: {
-                            50: '#f7f3f9',
-                            100: '#ece3f0',
-                            500: '#8a4cae',
-                            700: '#5e227f',
-                            900: '#3c1254',
-                        },
-                        flavy: {
-                            50: '#f7fbe9',
-                            400: '#b4d429',
-                            700: '#5c7310',
-                        }
+                        laurette: { 50:'#f7f3f9',100:'#ece3f0',500:'#8a4cae',600:'#6f3c8c',700:'#5e227f',900:'#3c1254' },
+                        flavy:    { 50:'#f7fbe9',400:'#b4d429',700:'#5c7310' }
                     }
                 }
             }
         }
     </script>
-    
+
     <style>
-        /* Animation d'apparition des lignes du tableau */
+        body { font-family: 'Inter', sans-serif; }
+
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
-        .animate-row {
-            animation: fadeInUp 0.4s ease-out forwards;
+        @keyframes podiumRise {
+            from { opacity: 0; transform: scaleY(0); transform-origin: bottom; }
+            to   { opacity: 1; transform: scaleY(1); }
+        }
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse-ring {
+            0%   { box-shadow: 0 0 0 0 rgba(180, 212, 41, 0.4); }
+            70%  { box-shadow: 0 0 0 10px rgba(180, 212, 41, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(180, 212, 41, 0); }
+        }
+
+        .row-animate { animation: fadeInUp 0.4s ease-out both; }
+        .podium-bar  { animation: podiumRise 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+        .count-anim  { animation: countUp 0.5s ease-out both; }
+
+        .live-dot { animation: pulse-ring 2s infinite; }
+
+        /* Barre de progression animée */
+        .progress-fill {
+            transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+            width: 0%;
+        }
+
+        /* Skeleton loader */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 6px;
+        }
+        @keyframes shimmer {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900 min-h-screen antialiased p-4 md:p-8">
+<body class="bg-gray-50 text-gray-900 min-h-screen antialiased">
 
-    <div class="max-w-5xl mx-auto space-y-8">
-        
-        <div class="text-center space-y-3">
-            <div class="inline-flex items-center gap-2 bg-flavy-50 border border-flavy-400/30 text-flavy-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-100 sticky top-0 z-10 backdrop-blur-md bg-white/90">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition text-sm font-semibold">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                Retour au portail
+            </a>
+            <div class="flex items-center gap-2">
+                <span class="live-dot w-2 h-2 bg-flavy-400 rounded-full inline-block"></span>
+                <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Données en temps réel</span>
+            </div>
+            <div class="text-xs text-gray-400 font-medium" id="last-updated">—</div>
+        </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto px-4 py-8 space-y-8">
+
+        <!-- Hero -->
+        <div class="text-center space-y-3 pt-2">
+            <div class="inline-flex items-center gap-2 bg-flavy-50 border border-flavy-400/40 text-flavy-700 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider">
                 ⚡ Défi Inter-Écoles 2026
             </div>
             <h1 class="text-3xl md:text-4xl font-black text-gray-900 tracking-tight">
                 Classement National <span class="text-laurette-700">Flavy Code</span>
             </h1>
-            <p class="text-gray-500 max-w-2xl mx-auto text-sm md:text-base">
-                Chaque inscription validée fait monter votre Bureau des Sports dans le classement. Quel campus mobilisera le plus de donneurs cette année ?
+            <p class="text-gray-500 max-w-xl mx-auto text-sm">
+                Chaque inscription validée fait monter votre BDS. Quel campus mobilisera le plus de donneurs ?
             </p>
+
+            <!-- Stats globales -->
+            <div class="flex items-center justify-center gap-6 pt-2">
+                <div class="text-center">
+                    <p class="text-2xl font-black text-laurette-700" id="stat-total">—</p>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Inscrits au total</p>
+                </div>
+                <div class="w-px h-8 bg-gray-200"></div>
+                <div class="text-center">
+                    <p class="text-2xl font-black text-laurette-700" id="stat-bds">—</p>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">BDS actifs</p>
+                </div>
+                <div class="w-px h-8 bg-gray-200"></div>
+                <div class="text-center">
+                    <p class="text-2xl font-black text-flavy-700" id="stat-leader">—</p>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Leader actuel</p>
+                </div>
+            </div>
         </div>
 
-        <div class="grid grid-cols-3 gap-3 md:gap-6 max-w-2xl mx-auto pt-8 items-end text-center">
-            
-            <div class="flex flex-col items-center space-y-2">
-                <div class="relative">
-                    <img class="w-12 h-12 md:w-16 md:h-16 rounded-full border-4 border-gray-300 bg-white shadow-md object-cover" src="https://ui-avatars.com/api/?name=Centrale+Nantes&background=ece3f0&color=5e227f" alt="Logo">
-                    <span class="absolute -bottom-2 -right-1 bg-gray-400 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">2</span>
+        <!-- Podium -->
+        <div id="podium-container" class="max-w-lg mx-auto">
+            <!-- Skeleton podium -->
+            <div class="grid grid-cols-3 gap-3 items-end pt-8 text-center">
+                <div class="flex flex-col items-center gap-2">
+                    <div class="skeleton w-14 h-14 rounded-full"></div>
+                    <div class="skeleton w-full h-28 rounded-t-xl"></div>
                 </div>
-                <div class="bg-white border-t-4 border-gray-300 rounded-t-xl shadow-sm w-full p-3 md:p-4 h-28 md:h-36 flex flex-col justify-between">
-                    <div class="text-xs md:text-sm font-bold text-gray-800 truncate">Centrale Nantes</div>
-                    <div>
-                        <span class="text-lg md:text-2xl font-black text-gray-900">142</span>
-                        <span class="block text-[10px] text-gray-400 uppercase font-bold">Dons</span>
-                    </div>
+                <div class="flex flex-col items-center gap-2">
+                    <div class="skeleton w-16 h-16 rounded-full"></div>
+                    <div class="skeleton w-full h-36 rounded-t-xl"></div>
                 </div>
-            </div>
-
-            <div class="flex flex-col items-center space-y-2">
-                <div class="relative -top-3">
-                    <div class="absolute -top-5 left-1/2 -translate-x-1/2 text-yellow-500 animate-bounce">👑</div>
-                    <img class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-yellow-400 bg-white shadow-lg object-cover" src="https://ui-avatars.com/api/?name=STAPS+Lyon&background=5e227f&color=fff" alt="Logo">
-                    <span class="absolute -bottom-1 -right-1 bg-yellow-400 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white">1</span>
-                </div>
-                <div class="bg-white border-t-4 border-yellow-400 rounded-t-xl shadow-md w-full p-3 md:p-4 h-36 md:h-44 flex flex-col justify-between">
-                    <div class="text-xs md:text-sm font-bold text-gray-900 truncate">STAPS Lyon</div>
-                    <div>
-                        <span class="text-2xl md:text-3xl font-black text-laurette-700">189</span>
-                        <span class="block text-[10px] text-gray-400 uppercase font-bold">Dons</span>
-                    </div>
+                <div class="flex flex-col items-center gap-2">
+                    <div class="skeleton w-12 h-12 rounded-full"></div>
+                    <div class="skeleton w-full h-24 rounded-t-xl"></div>
                 </div>
             </div>
-
-            <div class="flex flex-col items-center space-y-2">
-                <div class="relative">
-                    <img class="w-12 h-12 md:w-16 md:h-16 rounded-full border-4 border-amber-600 bg-white shadow-md object-cover" src="https://ui-avatars.com/api/?name=Sciences+Po&background=f7f3f9&color=8a4cae" alt="Logo">
-                    <span class="absolute -bottom-2 -right-1 bg-amber-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">3</span>
-                </div>
-                <div class="bg-white border-t-4 border-amber-600 rounded-t-xl shadow-sm w-full p-3 md:p-4 h-24 md:h-32 flex flex-col justify-between">
-                    <div class="text-xs md:text-sm font-bold text-gray-800 truncate">Sciences Po Paris</div>
-                    <div>
-                        <span class="text-lg md:text-2xl font-black text-gray-900">115</span>
-                        <span class="block text-[10px] text-gray-400 uppercase font-bold">Dons</span>
-                    </div>
-                </div>
-            </div>
-
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                <h3 class="font-bold text-gray-900">Classement général</h3>
-                <span class="text-xs font-semibold text-gray-500 bg-gray-200 px-2.5 py-1 rounded-md">5 Établissements actifs</span>
+        <!-- Tableau complet -->
+        <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                <h3 class="font-bold text-gray-900 text-sm">Classement général</h3>
+                <span id="bds-count-badge" class="text-xs font-bold text-gray-500 bg-gray-200 px-2.5 py-1 rounded-md">— établissements</span>
             </div>
-            
+
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200 text-left">
-                    <thead class="bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <table class="min-w-full divide-y divide-gray-100 text-left text-sm">
+                    <thead class="bg-gray-50/80 text-[10px] font-black text-gray-500 uppercase tracking-wider">
                         <tr>
-                            <th class="px-6 py-3.5 text-center w-16">Rang</th>
-                            <th class="px-6 py-3.5">École / Université</th>
-                            <th class="px-6 py-3.5">Ville</th>
-                            <th class="px-6 py-3.5">Dynamique</th>
-                            <th class="px-6 py-3.5 text-right">Total Inscriptions</th>
+                            <th class="px-5 py-3 text-center w-14">Rang</th>
+                            <th class="px-5 py-3">École / Université</th>
+                            <th class="px-5 py-3">Ville</th>
+                            <th class="px-5 py-3 min-w-[140px]">Progression</th>
+                            <th class="px-5 py-3 text-right">Inscrits</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200 text-sm">
-                        
-                        <tr class="hover:bg-gray-50/80 transition animate-row">
-                            <td class="px-6 py-4 text-center font-black text-yellow-600 text-base">1</td>
-                            <td class="px-6 py-4 font-bold text-gray-900">BDS STAPS Lyon</td>
-                            <td class="px-6 py-4 text-gray-500">Lyon</td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-50 text-green-700">🔥 Stable</span>
-                            </td>
-                            <td class="px-6 py-4 text-right font-black text-laurette-700 text-base">189</td>
-                        </tr>
-
-                        <tr class="hover:bg-gray-50/80 transition animate-row" style="animation-delay: 0.1s;">
-                            <td class="px-6 py-4 text-center font-black text-gray-500 text-base">2</td>
-                            <td class="px-6 py-4 font-bold text-gray-900">BDS Centrale Nantes</td>
-                            <td class="px-6 py-4 text-gray-500">Nantes</td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">▲ +1 Place</span>
-                            </td>
-                            <td class="px-6 py-4 text-right font-black text-gray-900">142</td>
-                        </tr>
-
-                        <tr class="hover:bg-gray-50/80 transition animate-row" style="animation-delay: 0.2s;">
-                            <td class="px-6 py-4 text-center font-black text-amber-700 text-base">3</td>
-                            <td class="px-6 py-4 font-bold text-gray-900">BDS Sciences Po Paris</td>
-                            <td class="px-6 py-4 text-gray-500">Paris</td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-700">▼ -1 Place</span>
-                            </td>
-                            <td class="px-6 py-4 text-right font-black text-gray-900">115</td>
-                        </tr>
-
-                        <tr class="hover:bg-gray-50/80 transition animate-row" style="animation-delay: 0.3s;">
-                            <td class="px-6 py-4 text-center font-black text-gray-400 text-base">4</td>
-                            <td class="px-6 py-4 font-bold text-gray-900">BDS Dauphine</td>
-                            <td class="px-6 py-4 text-gray-500">Paris</td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-50 text-green-700">🔥 Stable</span>
-                            </td>
-                            <td class="px-6 py-4 text-right font-black text-gray-900">68</td>
-                        </tr>
-
-                        <tr class="bg-laurette-50/40 hover:bg-laurette-50 transition border-l-4 border-l-laurette-700 animate-row" style="animation-delay: 0.4s;">
-                            <td class="px-6 py-4 text-center font-black text-laurette-700 text-base">5</td>
-                            <td class="px-6 py-4 font-bold text-laurette-900 flex items-center gap-2">
-                                BDS INSA Lyon 
-                                <span class="text-[10px] font-extrabold bg-laurette-700 text-white px-1.5 py-0.5 rounded uppercase">Votre Campus</span>
-                            </td>
-                            <td class="px-6 py-4 text-laurette-900 font-medium">Lyon</td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-flavy-400 text-white animate-pulse">⚡ Forte Progression</span>
-                            </td>
-                            <td class="px-6 py-4 text-right font-black text-laurette-700 text-base">54</td>
-                        </tr>
-
+                    <tbody id="leaderboard-body" class="bg-white divide-y divide-gray-100">
+                        <!-- Skeleton rows -->
+                        <tr><td colspan="5" class="px-5 py-3"><div class="skeleton h-8 w-full"></div></td></tr>
+                        <tr><td colspan="5" class="px-5 py-3"><div class="skeleton h-8 w-5/6"></div></td></tr>
+                        <tr><td colspan="5" class="px-5 py-3"><div class="skeleton h-8 w-4/6"></div></td></tr>
+                        <tr><td colspan="5" class="px-5 py-3"><div class="skeleton h-8 w-3/6"></div></td></tr>
+                        <tr><td colspan="5" class="px-5 py-3"><div class="skeleton h-8 w-2/6"></div></td></tr>
                     </tbody>
                 </table>
+            </div>
+
+            <div class="px-5 py-3 border-t border-gray-50 bg-gray-50/30 text-center">
+                <p class="text-xs text-gray-400">Mis à jour automatiquement · Seules les inscriptions <strong>validées</strong> comptent</p>
             </div>
         </div>
 
     </div>
+
+    <script>
+    const SUPABASE_URL = 'https://lhelfggczeybornhemsf.supabase.co';
+    const SUPABASE_KEY = 'REMPLACE_PAR_TA_CLE_ANON'; // ← ta clé eyJ...
+
+    // ID BDS de l'utilisateur courant (optionnel — pour mettre en évidence)
+    // On essaie de le récupérer depuis le localStorage ou l'URL
+    const MY_BDS_ID = localStorage.getItem('my_bds_id') || new URLSearchParams(location.search).get('bds_id');
+
+    const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ── Couleurs podium ──────────────────────────────────────────
+    const PODIUM = [
+        { border: 'border-yellow-400', bg: 'bg-yellow-400', text: 'text-yellow-600', rank: 1, crown: true,  h: 'h-36 md:h-44' },
+        { border: 'border-gray-300',   bg: 'bg-gray-400',   text: 'text-gray-500',   rank: 2, crown: false, h: 'h-28 md:h-36' },
+        { border: 'border-amber-500',  bg: 'bg-amber-500',  text: 'text-amber-600',  rank: 3, crown: false, h: 'h-24 md:h-32' },
+    ];
+    const RANK_COLORS = ['text-yellow-500','text-gray-400','text-amber-600'];
+
+    // ── Charger les données ──────────────────────────────────────
+    async function loadLeaderboard() {
+        try {
+            const { data: regs, error } = await _sb
+                .from('registrations')
+                .select('bds_id, bds(name, city)')
+                .eq('status', 'validated');
+
+            if (error) throw error;
+
+            // Agréger par BDS
+            const map = {};
+            regs.forEach(r => {
+                if (!r.bds_id) return;
+                if (!map[r.bds_id]) map[r.bds_id] = {
+                    id: r.bds_id,
+                    name: r.bds?.name || 'BDS',
+                    city: r.bds?.city || '—',
+                    count: 0
+                };
+                map[r.bds_id].count++;
+            });
+
+            const sorted = Object.values(map).sort((a, b) => b.count - a.count);
+            const total  = regs.length;
+            const leader = sorted[0];
+
+            renderStats(total, sorted.length, leader?.name || '—');
+            renderPodium(sorted);
+            renderTable(sorted, total);
+            document.getElementById('last-updated').textContent =
+                'Actualisé à ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+        } catch (err) {
+            console.error(err);
+            document.getElementById('leaderboard-body').innerHTML =
+                `<tr><td colspan="5" class="px-5 py-10 text-center text-sm text-red-500">Erreur de chargement : ${err.message}</td></tr>`;
+        }
+    }
+
+    // ── Stats globales ───────────────────────────────────────────
+    function renderStats(total, bdsCount, leaderName) {
+        animateNumber('stat-total', total);
+        animateNumber('stat-bds', bdsCount);
+        document.getElementById('stat-leader').textContent = leaderName.replace('BDS ','');
+    }
+
+    function animateNumber(id, target) {
+        const el = document.getElementById(id);
+        let current = 0;
+        const step  = Math.max(1, Math.ceil(target / 30));
+        const timer = setInterval(() => {
+            current = Math.min(current + step, target);
+            el.textContent = current;
+            if (current >= target) clearInterval(timer);
+        }, 40);
+    }
+
+    // ── Podium ───────────────────────────────────────────────────
+    function renderPodium(sorted) {
+        const top = [sorted[0], sorted[1], sorted[2]].map(b => b || null);
+        // Ordre d'affichage : [2ème, 1er, 3ème]
+        const display = [top[1], top[0], top[2]];
+        const pConf   = [PODIUM[1], PODIUM[0], PODIUM[2]]; // config pour chaque colonne
+
+        const html = `
+        <div class="grid grid-cols-3 gap-3 items-end pt-10 text-center">
+            ${display.map((bds, i) => {
+                const conf  = pConf[i];
+                const isMe  = bds && bds.id === MY_BDS_ID;
+                if (!bds) return `
+                <div class="flex flex-col items-center gap-2 opacity-20">
+                    <div class="w-12 h-12 rounded-full border-2 border-dashed border-gray-300"></div>
+                    <div class="bg-white border-t-4 ${conf.border} rounded-t-xl w-full ${conf.h} flex items-center justify-center">
+                        <span class="text-xs text-gray-300">—</span>
+                    </div>
+                </div>`;
+                const initials = bds.name.replace('BDS ','').slice(0,2).toUpperCase();
+                return `
+                <div class="flex flex-col items-center gap-2 podium-bar" style="animation-delay:${i*0.15}s">
+                    <div class="relative">
+                        ${conf.crown ? '<div class="absolute -top-6 left-1/2 -translate-x-1/2 text-yellow-400 text-xl animate-bounce">👑</div>' : ''}
+                        <div class="w-${conf.rank===1?'16':'12'} h-${conf.rank===1?'16':'12'} md:w-${conf.rank===1?'20':'16'} md:h-${conf.rank===1?'20':'16'} rounded-full border-4 ${conf.border} shadow-lg flex items-center justify-center font-black text-sm
+                            ${isMe ? 'bg-laurette-700 text-white' : 'bg-white text-laurette-700'}">
+                            ${initials}
+                        </div>
+                        <span class="absolute -bottom-1 -right-1 ${conf.bg} text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">${conf.rank}</span>
+                    </div>
+                    <div class="bg-white border-t-4 ${conf.border} rounded-t-xl shadow-sm w-full ${conf.h} p-3 flex flex-col justify-between">
+                        <p class="text-xs font-bold text-gray-800 truncate">${bds.name.replace('BDS ','')}</p>
+                        <div>
+                            <span class="text-${conf.rank===1?'2xl md:text-3xl':'lg md:text-2xl'} font-black ${isMe ? 'text-laurette-700' : 'text-gray-900'}">${bds.count}</span>
+                            <span class="block text-[9px] text-gray-400 uppercase font-bold">Inscrits</span>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>`;
+
+        document.getElementById('podium-container').innerHTML = html;
+    }
+
+    // ── Tableau ──────────────────────────────────────────────────
+    function renderTable(sorted, total) {
+        document.getElementById('bds-count-badge').textContent =
+            `${sorted.length} établissement${sorted.length > 1 ? 's' : ''} actif${sorted.length > 1 ? 's' : ''}`;
+
+        if (!sorted.length) {
+            document.getElementById('leaderboard-body').innerHTML =
+                `<tr><td colspan="5" class="px-5 py-10 text-center text-gray-400">Aucune donnée disponible.</td></tr>`;
+            return;
+        }
+
+        const max = sorted[0].count || 1;
+
+        document.getElementById('leaderboard-body').innerHTML = sorted.map((bds, i) => {
+            const rank   = i + 1;
+            const pct    = Math.round((bds.count / max) * 100);
+            const isMe   = bds.id === MY_BDS_ID;
+            const delay  = `animation-delay:${i * 0.06}s`;
+            const rankDisplay = rank <= 3
+                ? `<span class="${RANK_COLORS[i]} font-black text-base">${rank}</span>`
+                : `<span class="text-gray-400 font-bold">${rank}</span>`;
+            const trend = rank === 1 ? '<span class="badge-trend bg-green-50 text-green-700">🔥 Leader</span>'
+                        : rank <= 3  ? '<span class="badge-trend bg-green-100 text-green-800">▲ Top 3</span>'
+                        : isMe       ? '<span class="badge-trend bg-flavy-400 text-white animate-pulse">⚡ Progression</span>'
+                        :              '<span class="badge-trend bg-gray-100 text-gray-500">— Stable</span>';
+
+            return `
+            <tr class="row-animate transition ${isMe ? 'bg-laurette-50/60 border-l-4 border-l-laurette-700' : 'hover:bg-gray-50/70'}" style="${delay}">
+                <td class="px-5 py-3.5 text-center">${rankDisplay}</td>
+                <td class="px-5 py-3.5">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-7 h-7 rounded-full bg-laurette-100 text-laurette-700 text-[10px] font-black flex items-center justify-center flex-shrink-0">
+                            ${bds.name.replace('BDS ','').slice(0,2).toUpperCase()}
+                        </div>
+                        <span class="font-bold text-gray-900">${bds.name}</span>
+                        ${isMe ? '<span class="text-[9px] font-black bg-laurette-700 text-white px-1.5 py-0.5 rounded uppercase">Vous</span>' : ''}
+                    </div>
+                </td>
+                <td class="px-5 py-3.5 text-gray-500">${bds.city}</td>
+                <td class="px-5 py-3.5 min-w-[140px]">
+                    <div class="flex items-center gap-2">
+                        <div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full progress-fill ${isMe ? 'bg-flavy-400' : 'bg-laurette-500'}" data-width="${pct}"></div>
+                        </div>
+                        <span class="text-[10px] font-bold text-gray-400 w-8 text-right">${pct}%</span>
+                    </div>
+                </td>
+                <td class="px-5 py-3.5 text-right font-black text-base ${isMe ? 'text-laurette-700' : 'text-gray-900'}">${bds.count}</td>
+            </tr>`;
+        }).join('');
+
+        // Animer les barres de progression après rendu
+        requestAnimationFrame(() => {
+            document.querySelectorAll('.progress-fill').forEach(bar => {
+                bar.style.width = bar.dataset.width + '%';
+            });
+        });
+    }
+
+    // CSS inline pour les badges tendance
+    const style = document.createElement('style');
+    style.textContent = `.badge-trend { display:inline-flex; align-items:center; padding:2px 8px; border-radius:9999px; font-size:11px; font-weight:700; }`;
+    document.head.appendChild(style);
+
+    // ── Lancer + auto-refresh toutes les 30 sec ──────────────────
+    loadLeaderboard();
+    setInterval(loadLeaderboard, 30000);
+    </script>
 
 </body>
 </html>
