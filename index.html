@@ -3,336 +3,626 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laurette Fugain × BDS - Espace Ambassadeur</title>
-    
+    <title>Laurette Fugain × BDS — Espace Ambassadeur</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="style.css">
-    
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
                         laurette: {
-                            50: '#f7f3f9',
-                            100: '#ece3f0',
-                            200: '#d5c0df',
-                            300: '#b896c9',
-                            400: '#9b6bb0',
-                            500: '#8a4cae',
-                            600: '#6f3c8c',
-                            700: '#5e227f',
-                            800: '#4a1b63',
-                            900: '#3c1254',
+                            50: '#f7f3f9', 100: '#ece3f0', 200: '#d5c0df',
+                            300: '#b896c9', 400: '#9b6bb0', 500: '#8a4cae',
+                            600: '#6f3c8c', 700: '#5e227f', 800: '#4a1b63', 900: '#3c1254',
                         },
                         flavy: {
-                            50: '#f7fbe9',
-                            100: '#ecf6c8',
-                            200: '#ddef96',
-                            300: '#cbe45d',
-                            400: '#b4d429',
-                            500: '#9aba1b',
-                            600: '#799611',
-                            700: '#5c7310',
-                            800: '#4a5d12',
-                            900: '#3f4f14',
+                            50: '#f7fbe9', 100: '#ecf6c8', 200: '#ddef96',
+                            300: '#cbe45d', 400: '#b4d429', 500: '#9aba1b',
+                            600: '#799611', 700: '#5c7310', 800: '#4a5d12', 900: '#3f4f14',
                         }
                     },
                     boxShadow: {
-                        'card': '0 0 0 1px rgba(0,0,0,0.03), 0 1px 3px 0 rgba(0,0,0,0.08)',
-                        'floating': '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                        'card': '0 0 0 1px rgba(0,0,0,0.04), 0 2px 8px 0 rgba(0,0,0,0.06)',
+                        'floating': '0 10px 40px -10px rgba(0,0,0,0.15)',
                     }
                 }
             }
         }
     </script>
 </head>
-<body class="bg-gray-50 text-gray-900 h-screen overflow-hidden antialiased flex">
+<body class="bg-gray-50 text-gray-900 antialiased">
 
-    <div id="app-shell" class="flex w-full h-full">
-        
-        <aside class="w-72 bg-white border-r border-gray-200 flex flex-col h-full flex-shrink-0 relative z-20">
-            <div class="h-20 flex items-center px-6 border-b border-gray-100">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-laurette-700 rounded-xl flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-                    </div>
-                    <div>
-                        <span class="text-lg font-extrabold text-gray-900 block leading-tight">Laurette Fugain</span>
-                        <span class="text-xs font-semibold text-laurette-600 uppercase tracking-wider block">Portail BDS</span>
-                    </div>
+<!-- ============================================================ -->
+<!-- TOAST CONTAINER                                               -->
+<!-- ============================================================ -->
+<div id="toast-container" class="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- ============================================================ -->
+<!-- AUTH VIEW (login)                                             -->
+<!-- ============================================================ -->
+<div id="view-auth" class="min-h-screen flex hidden">
+
+    <!-- Left panel: branding -->
+    <div class="hidden lg:flex lg:w-1/2 bg-laurette-700 relative flex-col justify-between p-12 overflow-hidden">
+        <div class="absolute inset-0 auth-bg-pattern opacity-10"></div>
+        <div class="relative">
+            <div class="flex items-center gap-3 mb-16">
+                <div class="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center border border-white/20">
+                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z"/></svg>
+                </div>
+                <span class="text-white font-black text-lg tracking-tight">Laurette Fugain</span>
+            </div>
+            <h2 class="text-4xl font-black text-white leading-tight mb-4">
+                Chaque inscription<br>peut sauver une vie.
+            </h2>
+            <p class="text-white/60 text-base leading-relaxed max-w-sm">
+                Pilotez vos actions de sensibilisation, suivez vos inscriptions et progressez dans le classement national.
+            </p>
+        </div>
+        <div class="relative space-y-4">
+            <div class="flex items-center gap-4 bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/15">
+                <div class="w-10 h-10 rounded-full bg-flavy-400 flex items-center justify-center font-black text-white text-sm flex-shrink-0">12k</div>
+                <div>
+                    <p class="text-white font-bold text-sm">Donneurs inscrits en 2025</p>
+                    <p class="text-white/50 text-xs">Grâce au réseau BDS partenaire</p>
                 </div>
             </div>
-
-            <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-1" id="sidebar-nav">
-                <div class="px-3 mb-2">
-                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Pilotage</span>
+            <div class="flex gap-3">
+                <div class="flex-1 bg-white/10 rounded-xl p-3 text-center border border-white/10">
+                    <p class="text-2xl font-black text-white">48</p>
+                    <p class="text-white/50 text-[10px] uppercase font-bold tracking-wider mt-0.5">BDS Actifs</p>
                 </div>
-                
-                <a href="#" data-view="dashboard" class="nav-item group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg bg-laurette-50 text-laurette-700 transition-colors">
-                    <svg class="text-laurette-700 mr-3 flex-shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-                    Tableau de bord
-                </a>
-                
-                <a href="#" data-view="events" class="nav-item group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors">
-                    <svg class="text-gray-400 group-hover:text-gray-500 mr-3 flex-shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    Événements & Planning
-                </a>
-                
-                <a href="#" data-view="registrations" class="nav-item group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors">
-                    <svg class="text-gray-400 group-hover:text-gray-500 mr-3 flex-shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                    Suivi des Inscriptions
-                </a>
-
-                <div class="px-3 mb-2 mt-6">
-                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Réseau & Com</span>
+                <div class="flex-1 bg-white/10 rounded-xl p-3 text-center border border-white/10">
+                    <p class="text-2xl font-black text-flavy-400">96%</p>
+                    <p class="text-white/50 text-[10px] uppercase font-bold tracking-wider mt-0.5">Satisfaction</p>
                 </div>
-
-                <a href="#" data-view="leaderboard" class="nav-item group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors">
-                    <svg class="text-gray-400 group-hover:text-gray-500 mr-3 flex-shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-                    Classement National
-                    <span class="ml-auto inline-block py-0.5 px-2 text-xs font-bold rounded-full bg-flavy-100 text-flavy-700">Flavy Code</span>
-                </a>
-
-                <div class="px-3 mb-2 mt-6">
-                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Ressources</span>
-                </div>
-                
-                <a href="#" data-view="faq" class="nav-item group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors">
-                    <svg class="text-gray-400 group-hover:text-gray-500 mr-3 flex-shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    FAQ & Argumentaires
-                </a>
-            </nav>
-
-            <div class="border-t border-gray-200 p-4">
-                <div class="flex items-center w-full">
-                    <img class="inline-block h-10 w-10 rounded-full bg-gray-100 object-cover shadow-sm border border-gray-200" src="https://ui-avatars.com/api/?name=Victor&background=5e227f&color=fff" alt="" id="sidebar-avatar">
-                    <div class="ml-3 flex-1 overflow-hidden">
-                        <p class="text-sm font-bold text-gray-900 truncate" id="sidebar-user-name">Victor</p>
-                        <p class="text-xs font-medium text-gray-500 truncate" id="sidebar-bds-name">BDS INSA Lyon</p>
-                    </div>
+                <div class="flex-1 bg-white/10 rounded-xl p-3 text-center border border-white/10">
+                    <p class="text-2xl font-black text-white">3</p>
+                    <p class="text-white/50 text-[10px] uppercase font-bold tracking-wider mt-0.5">Vies Sauvées</p>
                 </div>
             </div>
-        </aside>
+        </div>
+    </div>
 
-        <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
-            
-            <header class="h-20 bg-white/80 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-8 relative z-10">
-                <div class="flex-1 flex items-center">
-                    <h2 class="text-xl font-bold text-gray-900" id="header-title">Tableau de bord</h2>
+    <!-- Right panel: form -->
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
+        <div class="w-full max-w-sm">
+            <div class="lg:hidden flex items-center gap-2 mb-8">
+                <div class="w-8 h-8 bg-laurette-700 rounded-lg flex items-center justify-center">
+                    <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z"/></svg>
                 </div>
-                
-                <div class="ml-4 flex items-center md:ml-6 gap-4">
-                    <button id="btn-global-add" class="bg-laurette-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold shadow-sm hover:bg-laurette-800 transition flex items-center">
-                        <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                        Nouvelle Inscription
-                    </button>
+                <span class="font-black text-gray-900">Laurette Fugain</span>
+            </div>
+
+            <h1 class="text-2xl font-black text-gray-900 mb-1">Connexion</h1>
+            <p class="text-gray-500 text-sm mb-8">Bienvenue dans votre espace ambassadeur.</p>
+
+            <!-- Error message -->
+            <div id="auth-error-message" class="hidden mb-5 bg-red-50 border border-red-100 rounded-xl p-4 flex items-start gap-3">
+                <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <p class="text-sm text-red-700 font-medium" id="auth-error-text"></p>
+            </div>
+
+            <form id="auth-form" class="space-y-4">
+                <div class="space-y-1.5">
+                    <label class="block text-sm font-semibold text-gray-700">Adresse email</label>
+                    <input type="email" id="email" required placeholder="votre@bds.fr"
+                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-laurette-500 focus:border-transparent focus:bg-white outline-none transition-all text-sm placeholder-gray-400">
                 </div>
-            </header>
-
-            <main class="flex-1 overflow-y-auto bg-gray-50 p-8" id="main-content">
-                
-                <div id="content-dashboard" class="view-section space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div class="bg-white rounded-xl p-6 shadow-card border-l-4 border-l-flavy-400">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm font-bold text-gray-500 uppercase tracking-wider">Inscriptions (Flavy Code)</p>
-                                    <p class="mt-2 text-4xl font-black text-gray-900" id="dash-reg-count">14</p>
-                                </div>
-                                <div class="p-3 bg-flavy-50 rounded-xl">
-                                    <svg class="h-8 w-8 text-flavy-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white rounded-xl p-6 shadow-card border-l-4 border-l-laurette-500">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm font-bold text-gray-500 uppercase tracking-wider">Événements Actifs</p>
-                                    <p class="mt-2 text-4xl font-black text-gray-900" id="dash-event-count">2</p>
-                                </div>
-                                <div class="p-3 bg-laurette-50 rounded-xl">
-                                    <svg class="h-8 w-8 text-laurette-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white rounded-xl p-6 shadow-card border-l-4 border-l-blue-500">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm font-bold text-gray-500 uppercase tracking-wider">Classement National</p>
-                                    <p class="mt-2 text-4xl font-black text-gray-900" id="dash-rank">#5</p>
-                                </div>
-                                <div class="p-3 bg-blue-50 rounded-xl">
-                                    <svg class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="lg:col-span-2 bg-white rounded-xl shadow-card p-6 border border-gray-100">
-                            <h3 class="text-lg font-bold text-gray-900 mb-6">Évolution des inscriptions</h3>
-                            <div class="h-72 w-full bg-gray-50 rounded-lg border border-dashed border-gray-200 flex items-end justify-between px-8 pt-10 pb-4 gap-2 relative overflow-hidden">
-                                <div class="w-1/12 bg-laurette-200 rounded-t-sm" style="height: 20%"></div>
-                                <div class="w-1/12 bg-laurette-300 rounded-t-sm" style="height: 35%"></div>
-                                <div class="w-1/12 bg-laurette-400 rounded-t-sm" style="height: 50%"></div>
-                                <div class="w-1/12 bg-flavy-400 rounded-t-sm" style="height: 80%"></div>
-                                <div class="w-1/12 bg-laurette-500 rounded-t-sm" style="height: 65%"></div>
-                                <div class="w-1/12 bg-laurette-600 rounded-t-sm" style="height: 44%"></div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white rounded-xl shadow-card p-0 border border-gray-100 flex flex-col">
-                            <div class="px-6 py-5 border-b border-gray-100">
-                                <h3 class="text-lg font-bold text-gray-900">Prochains Événements</h3>
-                            </div>
-                            <div class="p-0 flex-1 overflow-y-auto" id="dash-recent-events">
-                                <div class="px-6 py-4 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50 transition">
-                                    <div>
-                                        <p class="text-sm font-bold text-gray-900">Stand Recrutement Campus</p>
-                                        <p class="text-xs text-gray-500 capitalize">Sensibilisation</p>
-                                    </div>
-                                    <div class="text-right"><p class="text-sm font-bold text-laurette-700">25 Mai</p></div>
-                                </div>
-                                <div class="px-6 py-4 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50 transition">
-                                    <div>
-                                        <p class="text-sm font-bold text-gray-900">Conférence Don de Moelle</p>
-                                        <p class="text-xs text-gray-500 capitalize">Inscription</p>
-                                    </div>
-                                    <div class="text-right"><p class="text-sm font-bold text-laurette-700">02 Juin</p></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="content-events" class="view-section hidden space-y-6">
-                    <div class="flex justify-between items-center">
-                        <p class="text-gray-500">Planifiez vos actions de sensibilisation sur le campus.</p>
-                        <button id="btn-create-event" class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 transition flex items-center">
-                            <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                            Créer un événement
+                <div class="space-y-1.5">
+                    <label class="block text-sm font-semibold text-gray-700">Mot de passe</label>
+                    <div class="relative">
+                        <input type="password" id="password" required placeholder="••••••••"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-laurette-500 focus:border-transparent focus:bg-white outline-none transition-all text-sm pr-11">
+                        <button type="button" id="toggle-password" class="absolute right-3 top-3 p-0.5 text-gray-400 hover:text-gray-600 transition">
+                            <svg class="w-5 h-5" id="eye-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                         </button>
                     </div>
-
-                    <div class="bg-white rounded-xl shadow-card border border-gray-200 overflow-hidden">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Date & Titre</th>
-                                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Type</th>
-                                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Statut</th>
-                                    <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">Objectif Inscrits</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200" id="events-table-body">
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 flex items-center">
-                                        <div class="h-10 w-10 bg-gray-50 rounded-lg flex flex-col items-center justify-center border border-gray-200">
-                                            <span class="text-xs font-bold text-laurette-700">25</span>
-                                            <span class="text-[9px] font-bold text-gray-400 uppercase">Mai</span>
-                                        </div>
-                                        <div class="ml-4 text-sm font-bold text-gray-900">Stand Recrutement Campus</div>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-600">Sensibilisation</td>
-                                    <td class="px-6 py-4"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Planifié</span></td>
-                                    <td class="px-6 py-4 text-right text-sm font-bold text-gray-900">0 <span class="text-gray-400 font-normal">/ 15</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
+                <button type="submit" id="auth-submit-btn"
+                    class="w-full bg-laurette-700 hover:bg-laurette-800 active:bg-laurette-900 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-laurette-700/20 text-sm mt-2 flex items-center justify-center gap-2">
+                    Accéder à mon espace
+                </button>
+            </form>
 
-                <div id="content-faq" class="view-section hidden max-w-4xl mx-auto py-4">
-                    <div class="text-center mb-10">
-                        <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight mb-3">Boîte à outils de l'Ambassadeur</h2>
-                    </div>
-                    <div class="space-y-4" id="faq-accordion-container">
-                        </div>
-                </div>
-
-                <div id="content-registrations" class="view-section hidden text-center py-20 text-gray-400">Suivi des Inscriptions - Module Prêt</div>
-                <div id="content-leaderboard" class="view-section hidden text-center py-20 text-gray-400">Classement National - Module Prêt</div>
-
-            </main>
+            <p class="text-center text-gray-400 text-xs mt-8">
+                Problème de connexion ? Contactez votre référent Laurette Fugain.
+            </p>
         </div>
     </div>
+</div>
 
-    <div id="modal-event" class="fixed inset-0 z-50 hidden">
-        <div class="fixed inset-0 bg-gray-900 bg-opacity-75 backdrop-blur-sm" id="modal-event-backdrop"></div>
-        <div class="fixed inset-0 z-10 overflow-y-auto flex items-center justify-center p-4">
-            <div class="relative transform overflow-hidden rounded-2xl bg-white shadow-2xl sm:w-full sm:max-w-lg border border-gray-100 p-6">
-                <form id="form-create-event" class="space-y-4">
-                    <h3 class="text-xl font-bold text-gray-900">Nouvelle action</h3>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700">Titre</label>
-                        <input type="text" id="event-title" required class="mt-1 block w-full rounded-lg border px-3 py-2 outline-none border-gray-300">
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700">Date</label>
-                            <input type="date" id="event-date" required class="mt-1 block w-full rounded-lg border px-3 py-2 outline-none border-gray-300">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700">Type</label>
-                            <select id="event-type" class="mt-1 block w-full rounded-lg border px-3 py-2 outline-none border-gray-300">
-                                <option value="sensibilisation">Sensibilisation</option>
-                                <option value="inscription">Inscription</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700">Objectif</label>
-                        <input type="number" id="event-target" value="10" class="mt-1 block w-full rounded-lg border px-3 py-2 outline-none border-gray-300">
-                    </div>
-                    <div class="flex justify-end gap-2 pt-2">
-                        <button type="button" id="btn-cancel-event" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-bold">Annuler</button>
-                        <button type="submit" class="bg-laurette-700 text-white px-4 py-2 rounded-lg font-bold">Créer</button>
-                    </div>
-                </form>
+<!-- ============================================================ -->
+<!-- APP SHELL                                                     -->
+<!-- ============================================================ -->
+<div id="app-shell" class="hidden flex h-screen w-screen overflow-hidden">
+
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-white border-r border-gray-100 flex flex-col h-full flex-shrink-0 relative z-20">
+
+        <!-- Logo -->
+        <div class="h-16 flex items-center px-5 border-b border-gray-100">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 bg-laurette-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z"/></svg>
+                </div>
+                <div>
+                    <span class="text-sm font-black text-gray-900 block leading-tight">Laurette Fugain</span>
+                    <span class="text-[10px] font-bold text-laurette-600 uppercase tracking-wider block">Portail BDS</span>
+                </div>
             </div>
         </div>
+
+        <!-- Nav -->
+        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-0.5" id="sidebar-nav">
+
+            <p class="px-2 pt-1 pb-2 text-[10px] font-black text-gray-400 uppercase tracking-wider">Pilotage</p>
+
+            <a href="#" data-view="dashboard" class="nav-item group flex items-center px-3 py-2 text-sm font-semibold rounded-lg bg-laurette-50 text-laurette-700 transition-colors">
+                <svg class="mr-2.5 flex-shrink-0 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                Tableau de bord
+            </a>
+
+            <a href="#" data-view="events" class="nav-item group flex items-center px-3 py-2 text-sm font-semibold rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors">
+                <svg class="mr-2.5 flex-shrink-0 h-4 w-4 text-gray-400 group-hover:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                Événements
+            </a>
+
+            <a href="#" data-view="registrations" class="nav-item group flex items-center px-3 py-2 text-sm font-semibold rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors">
+                <svg class="mr-2.5 flex-shrink-0 h-4 w-4 text-gray-400 group-hover:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                Inscriptions
+                <span id="badge-registrations" class="ml-auto hidden text-[10px] font-black bg-laurette-700 text-white px-1.5 py-0.5 rounded-full min-w-[18px] text-center"></span>
+            </a>
+
+            <p class="px-2 pt-4 pb-2 text-[10px] font-black text-gray-400 uppercase tracking-wider">Réseau</p>
+
+            <a href="#" data-view="leaderboard" class="nav-item group flex items-center px-3 py-2 text-sm font-semibold rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors">
+                <svg class="mr-2.5 flex-shrink-0 h-4 w-4 text-gray-400 group-hover:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                Classement
+                <span class="ml-auto text-[9px] font-black bg-flavy-400 text-white px-1.5 py-0.5 rounded-full">LIVE</span>
+            </a>
+
+            <p class="px-2 pt-4 pb-2 text-[10px] font-black text-gray-400 uppercase tracking-wider">Ressources</p>
+
+            <a href="#" data-view="faq" class="nav-item group flex items-center px-3 py-2 text-sm font-semibold rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors">
+                <svg class="mr-2.5 flex-shrink-0 h-4 w-4 text-gray-400 group-hover:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                FAQ & Argumentaires
+            </a>
+        </nav>
+
+        <!-- User profile + logout -->
+        <div class="border-t border-gray-100 p-3">
+            <div class="flex items-center gap-3 w-full">
+                <img class="h-8 w-8 rounded-lg bg-gray-100 object-cover flex-shrink-0 border border-gray-200"
+                    src="https://ui-avatars.com/api/?name=A&background=5e227f&color=fff" alt="" id="sidebar-avatar">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-gray-900 truncate leading-tight" id="sidebar-user-name">Ambassadeur</p>
+                    <p class="text-xs text-gray-500 truncate leading-tight" id="sidebar-bds-name">BDS</p>
+                </div>
+                <button id="btn-logout" title="Se déconnecter"
+                    class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden">
+
+        <!-- Header -->
+        <header class="h-16 bg-white/90 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 flex-shrink-0 z-10">
+            <div class="flex items-center gap-2">
+                <div class="w-1 h-5 bg-laurette-700 rounded-full"></div>
+                <h2 class="text-base font-black text-gray-900" id="header-title">Tableau de bord</h2>
+            </div>
+            <div class="flex items-center gap-2">
+                <!-- Notification bell -->
+                <button class="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-flavy-400 rounded-full border-2 border-white"></span>
+                </button>
+                <!-- CTA -->
+                <button id="btn-global-add"
+                    class="bg-laurette-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-laurette-800 active:bg-laurette-900 transition flex items-center gap-1.5">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                    Nouvelle Inscription
+                </button>
+            </div>
+        </header>
+
+        <!-- Main content -->
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-6" id="main-content">
+
+            <!-- ============ DASHBOARD ============ -->
+            <div id="content-dashboard" class="view-section space-y-5">
+
+                <!-- Stat cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                    <div class="bg-white rounded-xl p-5 shadow-card border border-gray-100">
+                        <div class="flex items-center justify-between mb-3">
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Inscriptions validées</p>
+                            <div class="p-2 bg-flavy-50 rounded-lg">
+                                <svg class="h-4 w-4 text-flavy-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                        </div>
+                        <p class="text-3xl font-black text-gray-900" id="dash-reg-count">—</p>
+                        <div class="mt-3">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Objectif annuel</span>
+                                <span class="text-[10px] font-bold text-flavy-700" id="dash-reg-progress-text">—</span>
+                            </div>
+                            <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-flavy-400 rounded-full transition-all duration-700 progress-bar" id="dash-reg-progress" style="width:0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-5 shadow-card border border-gray-100">
+                        <div class="flex items-center justify-between mb-3">
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Événements actifs</p>
+                            <div class="p-2 bg-laurette-50 rounded-lg">
+                                <svg class="h-4 w-4 text-laurette-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            </div>
+                        </div>
+                        <p class="text-3xl font-black text-gray-900" id="dash-event-count">—</p>
+                        <p class="mt-3 text-xs text-gray-400 font-medium">Planifiés ou confirmés</p>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-5 shadow-card border border-gray-100">
+                        <div class="flex items-center justify-between mb-3">
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Classement national</p>
+                            <div class="p-2 bg-blue-50 rounded-lg">
+                                <svg class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            </div>
+                        </div>
+                        <p class="text-3xl font-black text-gray-900" id="dash-rank">—</p>
+                        <p class="mt-3 text-xs text-gray-400 font-medium" id="dash-rank-hint">Sur l'ensemble des BDS</p>
+                    </div>
+                </div>
+
+                <!-- Charts + events -->
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+
+                    <!-- Sparkline chart -->
+                    <div class="lg:col-span-3 bg-white rounded-xl shadow-card border border-gray-100 p-5">
+                        <div class="flex items-center justify-between mb-5">
+                            <h3 class="text-sm font-bold text-gray-900">Évolution des inscriptions</h3>
+                            <span class="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-md uppercase tracking-wider">30 derniers jours</span>
+                        </div>
+                        <div class="relative h-36" id="dash-chart-container">
+                            <!-- SVG chart injected by JS -->
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="animate-pulse space-y-2 w-full px-4">
+                                    <div class="h-2 bg-gray-100 rounded w-full"></div>
+                                    <div class="h-2 bg-gray-100 rounded w-4/5"></div>
+                                    <div class="h-2 bg-gray-100 rounded w-3/5"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center mt-3 pt-3 border-t border-gray-50">
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-laurette-500 inline-block"></span>
+                                    <span class="text-[10px] font-semibold text-gray-500">Inscriptions</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-flavy-400 inline-block"></span>
+                                    <span class="text-[10px] font-semibold text-gray-500">Événements</span>
+                                </div>
+                            </div>
+                            <button data-view="registrations" class="nav-trigger-link text-[10px] font-bold text-laurette-700 hover:underline">Voir tout →</button>
+                        </div>
+                    </div>
+
+                    <!-- Upcoming events -->
+                    <div class="lg:col-span-2 bg-white rounded-xl shadow-card border border-gray-100 flex flex-col">
+                        <div class="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-gray-900">Prochains événements</h3>
+                            <button data-view="events" class="nav-trigger-link text-[10px] font-bold text-laurette-700 hover:underline">Voir tout</button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto divide-y divide-gray-50" id="dash-recent-events">
+                            <!-- Skeleton -->
+                            <div class="px-5 py-4 flex items-center gap-3">
+                                <div class="w-10 h-10 bg-gray-100 rounded-lg animate-pulse flex-shrink-0"></div>
+                                <div class="flex-1 space-y-1.5">
+                                    <div class="h-3 bg-gray-100 rounded animate-pulse w-3/4"></div>
+                                    <div class="h-2.5 bg-gray-100 rounded animate-pulse w-1/2"></div>
+                                </div>
+                            </div>
+                            <div class="px-5 py-4 flex items-center gap-3">
+                                <div class="w-10 h-10 bg-gray-100 rounded-lg animate-pulse flex-shrink-0"></div>
+                                <div class="flex-1 space-y-1.5">
+                                    <div class="h-3 bg-gray-100 rounded animate-pulse w-2/3"></div>
+                                    <div class="h-2.5 bg-gray-100 rounded animate-pulse w-1/2"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ EVENTS ============ -->
+            <div id="content-events" class="view-section hidden space-y-4">
+                <div class="flex justify-between items-center">
+                    <p class="text-sm text-gray-500">Planifiez vos actions de sensibilisation sur le campus.</p>
+                    <button id="btn-create-event" class="bg-white border border-gray-200 text-gray-700 px-3.5 py-2 rounded-lg text-sm font-bold shadow-card hover:bg-gray-50 transition flex items-center gap-2">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        Créer un événement
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-card border border-gray-100 overflow-hidden">
+                    <table class="min-w-full divide-y divide-gray-100">
+                        <thead class="bg-gray-50/80">
+                            <tr>
+                                <th class="px-5 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Date & Titre</th>
+                                <th class="px-5 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Type</th>
+                                <th class="px-5 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Statut</th>
+                                <th class="px-5 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Progression</th>
+                                <th class="px-5 py-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">Objectif</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-100" id="events-table-body">
+                            <tr><td colspan="5" class="px-5 py-10 text-center">
+                                <div class="space-y-2">
+                                    <div class="w-8 h-8 border-2 border-laurette-200 border-t-laurette-700 rounded-full animate-spin mx-auto"></div>
+                                    <p class="text-sm text-gray-400">Chargement...</p>
+                                </div>
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ============ REGISTRATIONS ============ -->
+            <div id="content-registrations" class="view-section hidden space-y-4">
+                <!-- Filters bar -->
+                <div class="flex gap-3 items-center flex-wrap">
+                    <div class="relative flex-1 min-w-48">
+                        <svg class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <input type="search" id="reg-search" placeholder="Rechercher un donneur..." class="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-laurette-500 focus:border-transparent">
+                    </div>
+                    <select id="reg-filter-status" class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 outline-none focus:ring-2 focus:ring-laurette-500">
+                        <option value="">Tous les statuts</option>
+                        <option value="validated">Validés</option>
+                        <option value="pending">En attente</option>
+                        <option value="cancelled">Annulés</option>
+                    </select>
+                    <button id="btn-export-reg" class="bg-white border border-gray-200 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition flex items-center gap-2">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Export CSV
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-card border border-gray-100 overflow-hidden">
+                    <table class="min-w-full divide-y divide-gray-100">
+                        <thead class="bg-gray-50/80">
+                            <tr>
+                                <th class="px-5 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Donneur</th>
+                                <th class="px-5 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Email</th>
+                                <th class="px-5 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Événement</th>
+                                <th class="px-5 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="px-5 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-100" id="registrations-table-body">
+                            <tr><td colspan="5" class="px-5 py-10 text-center">
+                                <div class="space-y-2">
+                                    <div class="w-8 h-8 border-2 border-laurette-200 border-t-laurette-700 rounded-full animate-spin mx-auto"></div>
+                                    <p class="text-sm text-gray-400">Chargement...</p>
+                                </div>
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="reg-pagination" class="flex items-center justify-between pt-1">
+                    <p class="text-xs text-gray-500" id="reg-count-label"></p>
+                </div>
+            </div>
+
+            <!-- ============ LEADERBOARD ============ -->
+            <div id="content-leaderboard" class="view-section hidden">
+                <div class="max-w-4xl mx-auto space-y-6">
+
+                    <div class="text-center space-y-2">
+                        <div class="inline-flex items-center gap-1.5 bg-flavy-50 border border-flavy-200 text-flavy-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                            ⚡ Défi Inter-Écoles 2026
+                        </div>
+                        <h2 class="text-2xl font-black text-gray-900">Classement National <span class="text-laurette-700">Flavy Code</span></h2>
+                        <p class="text-sm text-gray-500">Chaque inscription validée fait monter votre BDS dans le classement national.</p>
+                    </div>
+
+                    <!-- Podium -->
+                    <div class="grid grid-cols-3 gap-3 max-w-lg mx-auto pt-6 items-end text-center" id="leaderboard-podium">
+                        <div class="col-span-3 flex items-center justify-center gap-2 py-8 text-gray-400">
+                            <div class="w-6 h-6 border-2 border-gray-200 border-t-laurette-500 rounded-full animate-spin"></div>
+                            <span class="text-sm">Chargement du classement…</span>
+                        </div>
+                    </div>
+
+                    <!-- Full table -->
+                    <div class="bg-white rounded-xl shadow-card border border-gray-100 overflow-hidden">
+                        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                            <h3 class="text-sm font-bold text-gray-900">Classement général</h3>
+                            <span id="leaderboard-count" class="text-[10px] font-bold text-gray-500 bg-gray-200 px-2 py-1 rounded-md">— Établissements</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-100">
+                                <thead class="bg-gray-50/80 text-[10px] font-black text-gray-500 uppercase tracking-wider">
+                                    <tr>
+                                        <th class="px-5 py-3 text-center w-16">Rang</th>
+                                        <th class="px-5 py-3 text-left">École / Université</th>
+                                        <th class="px-5 py-3 text-left">Ville</th>
+                                        <th class="px-5 py-3 text-left">Tendance</th>
+                                        <th class="px-5 py-3 text-right">Inscriptions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaderboard-table-body" class="bg-white divide-y divide-gray-100 text-sm">
+                                    <tr><td colspan="5" class="px-5 py-8 text-center text-gray-400 text-sm">Chargement…</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ FAQ ============ -->
+            <div id="content-faq" class="view-section hidden max-w-3xl mx-auto">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-black text-gray-900 tracking-tight mb-2">Boîte à outils Ambassadeur</h2>
+                    <p class="text-sm text-gray-500">Toutes les réponses aux questions fréquentes de terrain.</p>
+                </div>
+                <div class="space-y-3" id="faq-accordion-container"></div>
+            </div>
+
+        </main>
     </div>
+</div>
 
-    <script>
-        // Logique de navigation directe et immédiate pour le mode Bypass
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetView = item.getAttribute('data-view');
-                
-                // Switch classes menu
-                document.querySelectorAll('.nav-item').forEach(i => {
-                    i.classList.remove('bg-laurette-50', 'text-laurette-700');
-                    i.classList.add('text-gray-700', 'hover:bg-gray-50');
-                });
-                item.classList.add('bg-laurette-50', 'text-laurette-700');
-                
-                // Switch Vues
-                document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
-                document.getElementById(`content-${targetView}`).classList.remove('hidden');
-                document.getElementById('header-title').textContent = item.textContent.trim();
-            });
-        });
+<!-- ============================================================ -->
+<!-- MODAL — Créer un événement                                    -->
+<!-- ============================================================ -->
+<div id="modal-event" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" id="modal-event-backdrop"></div>
+    <div class="fixed inset-0 z-10 overflow-y-auto flex items-center justify-center p-4">
+        <div class="relative bg-white rounded-2xl shadow-floating sm:w-full sm:max-w-md border border-gray-100 overflow-hidden modal-pop">
+            <div class="bg-gray-50 border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-base font-bold text-gray-900">Nouvelle action terrain</h3>
+                <button id="btn-cancel-event" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <form id="form-create-event" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Titre de l'action</label>
+                    <input type="text" id="event-title" required placeholder="ex: Stand Recrutement Campus"
+                        class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-laurette-500 focus:bg-white transition">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Date</label>
+                        <input type="date" id="event-date" required
+                            class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-laurette-500 focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Type</label>
+                        <select id="event-type" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-laurette-500 transition">
+                            <option value="sensibilisation">Sensibilisation</option>
+                            <option value="inscription">Inscription</option>
+                            <option value="conference">Conférence</option>
+                            <option value="stand">Stand</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Objectif (nbre de donneurs)</label>
+                    <input type="number" id="event-target" value="10" min="1"
+                        class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-laurette-500 focus:bg-white transition">
+                </div>
+                <div class="flex gap-2 pt-1">
+                    <button type="button" id="btn-cancel-event-2"
+                        class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-bold transition">Annuler</button>
+                    <button type="submit" id="btn-submit-event"
+                        class="flex-1 bg-laurette-700 hover:bg-laurette-800 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2">
+                        Créer l'événement
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-        // Gestion rapide modale
-        document.getElementById('btn-create-event').addEventListener('click', () => document.getElementById('modal-event').classList.remove('hidden'));
-        document.getElementById('btn-cancel-event').addEventListener('click', () => document.getElementById('modal-event').classList.add('hidden'));
-        document.getElementById('modal-event-backdrop').addEventListener('click', () => document.getElementById('modal-event').classList.add('hidden'));
-    </script>
-    
-    <script src="app.js"></script>
+<!-- ============================================================ -->
+<!-- MODAL — Nouvelle Inscription Donneur                          -->
+<!-- ============================================================ -->
+<div id="modal-registration" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" id="modal-reg-backdrop"></div>
+    <div class="fixed inset-0 z-10 overflow-y-auto flex items-center justify-center p-4">
+        <div class="relative bg-white rounded-2xl shadow-floating sm:w-full sm:max-w-md border border-gray-100 overflow-hidden modal-pop">
+
+            <!-- Header -->
+            <div class="bg-laurette-700 px-6 py-5 relative overflow-hidden">
+                <div class="absolute inset-0 opacity-10 auth-bg-pattern"></div>
+                <div class="relative flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="w-1.5 h-1.5 bg-flavy-400 rounded-full animate-ping"></span>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-white/70">Mode Terrain</span>
+                        </div>
+                        <h3 class="text-lg font-black text-white">Nouveau Donneur</h3>
+                    </div>
+                    <button id="btn-cancel-reg"
+                        class="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form id="form-registration" class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1.5">Prénom</label>
+                        <input type="text" id="reg-first-name" required placeholder="Jean"
+                            class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-laurette-500 focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1.5">Nom</label>
+                        <input type="text" id="reg-last-name" required placeholder="Dupont"
+                            class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-laurette-500 focus:bg-white transition">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1.5">Email étudiant</label>
+                    <input type="email" id="reg-email" required placeholder="nom@ecole.fr"
+                        class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-laurette-500 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1.5">Téléphone <span class="text-gray-400 normal-case font-normal">(optionnel)</span></label>
+                    <input type="tel" id="reg-phone" placeholder="06 00 00 00 00"
+                        class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-laurette-500 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1.5">Événement lié</label>
+                    <select id="reg-event-id" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-laurette-500 transition">
+                        <option value="">— Aucun événement —</option>
+                    </select>
+                </div>
+                <div class="bg-laurette-50 rounded-xl p-3.5 border border-laurette-100">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" id="reg-consent" required class="mt-0.5 h-4 w-4 rounded border-gray-300 text-laurette-700 focus:ring-laurette-500 flex-shrink-0">
+                        <span class="text-xs text-gray-700 leading-relaxed">
+                            Je consens à être recontacté par l'association <strong>Laurette Fugain</strong> pour finaliser mon inscription sur le registre national des donneurs de moelle osseuse.
+                        </span>
+                    </label>
+                </div>
+                <div class="flex gap-2 pt-1">
+                    <button type="button" id="btn-cancel-reg-2"
+                        class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-bold transition">Annuler</button>
+                    <button type="submit" id="btn-submit-reg"
+                        class="flex-1 bg-laurette-700 hover:bg-laurette-800 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        Inscrire le donneur
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
 </body>
 </html>
