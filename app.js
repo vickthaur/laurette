@@ -9,7 +9,7 @@
 
 // ── 1. CONFIG ────────────────────────────────────────────────
 const SB_URL = 'https://lhelfggczeybornhemsf.supabase.co';
-const SB_KEY = 'REMPLACE_PAR_TA_CLE_ANON'; // ← clé eyJ... depuis Settings > API
+const SB_KEY = 'sb_publishable_rvOSgbkjsZRcwGCenkzY_g_5am-b6dk'; // ← clé eyJ... depuis Settings > API
 
 const ANNUAL_GOAL = 100; // objectif annuel d'inscriptions
 
