@@ -1,902 +1,777 @@
 /**
  * ============================================================
- * LAURETTE FUGAIN × BDS — Moteur JavaScript v2.0
+ * LAURETTE FUGAIN × BDS — app.js v3 (clean rewrite)
+ * ============================================================
+ * IMPORTANT : ne pas nommer la variable 'supabase' —
+ * conflit avec le global CDN window.supabase
  * ============================================================
  */
 
-// ==========================================
-// 1. SUPABASE & ÉTAT GLOBAL
-// ==========================================
-const SUPABASE_URL  = 'https://lhelfggczeybornhemsf.supabase.co';
-const SUPABASE_KEY  = 'sb_publishable_rvOSgbkjsZRcwGCenkzY_g_5am-b6dk';
+// ── 1. CONFIG ────────────────────────────────────────────────
+const SB_URL = 'https://lhelfggczeybornhemsf.supabase.co';
+const SB_KEY = 'REMPLACE_PAR_TA_CLE_ANON'; // ← clé eyJ... depuis Settings > API
 
-let _sb;
+const ANNUAL_GOAL = 100; // objectif annuel d'inscriptions
+
+// ── 2. CLIENT SUPABASE ───────────────────────────────────────
+// On utilise '_db' pour éviter tout conflit avec window.supabase (CDN)
+let _db;
 try {
-    _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    window._sbClient = _sb; // exposé globalement pour handleLogin()
-} catch(e) {
-    console.error('Supabase init failed:', e);
+    _db = window.supabase.createClient(SB_URL, SB_KEY);
+    window._dbClient = _db;
+} catch (e) {
+    console.error('[Supabase] init failed:', e);
 }
 
+// ── 3. ÉTAT GLOBAL ───────────────────────────────────────────
 const State = {
-    user: null,
-    profile: null,
-    currentView: 'dashboard',
-    events: [],
-    faqs: [],
+    user:          null,
+    profile:       null,
+    bdsId:         null,
+    events:        [],
     registrations: [],
-    leaderboard: [],
-    // Objectif annuel (modifiable)
-    annualGoal: 100,
+    faqs:          [],
+    currentView:   'dashboard',
 };
 
-// ==========================================
-// 2. CACHE DOM
-// ==========================================
-const DOM = {
-    views: {
-        auth: document.getElementById('view-auth'),
-        app:  document.getElementById('app-shell'),
-    },
+// ── 4. CACHE DOM ─────────────────────────────────────────────
+const el = id => document.getElementById(id);
+const D = {
+    authView:    el('view-auth'),
+    appShell:    el('app-shell'),
     sections:    document.querySelectorAll('.view-section'),
     navItems:    document.querySelectorAll('.nav-item'),
-    navTriggers: document.querySelectorAll('.nav-trigger-link'),
-    headerTitle: document.getElementById('header-title'),
-    auth: {
-        form:           document.getElementById('auth-form'),
-        email:          document.getElementById('email'),
-        password:       document.getElementById('password'),
-        errorContainer: document.getElementById('auth-error-message'),
-        errorText:      document.getElementById('auth-error-text'),
-        submitBtn:      document.getElementById('auth-submit-btn'),
-        togglePassword: document.getElementById('toggle-password'),
-    },
-    sidebar: {
-        userName:  document.getElementById('sidebar-user-name'),
-        bdsName:   document.getElementById('sidebar-bds-name'),
-        avatar:    document.getElementById('sidebar-avatar'),
-        logoutBtn: document.getElementById('btn-logout'),
-    },
-    dashboard: {
-        regCount:         document.getElementById('dash-reg-count'),
-        regProgress:      document.getElementById('dash-reg-progress'),
-        regProgressText:  document.getElementById('dash-reg-progress-text'),
-        eventCount:       document.getElementById('dash-event-count'),
-        rank:             document.getElementById('dash-rank'),
-        rankHint:         document.getElementById('dash-rank-hint'),
-        recentEvents:     document.getElementById('dash-recent-events'),
-        chartContainer:   document.getElementById('dash-chart-container'),
-    },
-    events: {
-        tableBody: document.getElementById('events-table-body'),
-        btnCreate: document.getElementById('btn-create-event'),
-    },
-    registrations: {
-        tableBody:    document.getElementById('registrations-table-body'),
-        search:       document.getElementById('reg-search'),
-        filterStatus: document.getElementById('reg-filter-status'),
-        exportBtn:    document.getElementById('btn-export-reg'),
-        countLabel:   document.getElementById('reg-count-label'),
-        badge:        document.getElementById('badge-registrations'),
-    },
-    leaderboard: {
-        podium:    document.getElementById('leaderboard-podium'),
-        tableBody: document.getElementById('leaderboard-table-body'),
-        count:     document.getElementById('leaderboard-count'),
-    },
-    faq: {
-        container: document.getElementById('faq-accordion-container'),
-    },
-    modal: {
-        event: {
-            container: document.getElementById('modal-event'),
-            backdrop:  document.getElementById('modal-event-backdrop'),
-            form:      document.getElementById('form-create-event'),
-            btnCancel: document.getElementById('btn-cancel-event'),
-            btnCancel2: document.getElementById('btn-cancel-event-2'),
-            btnSubmit: document.getElementById('btn-submit-event'),
-        },
-        reg: {
-            container:   document.getElementById('modal-registration'),
-            backdrop:    document.getElementById('modal-reg-backdrop'),
-            form:        document.getElementById('form-registration'),
-            btnCancel:   document.getElementById('btn-cancel-reg'),
-            btnCancel2:  document.getElementById('btn-cancel-reg-2'),
-            eventSelect: document.getElementById('reg-event-id'),
-        },
-    },
-    toastContainer: document.getElementById('toast-container'),
-    btnGlobalAdd:   document.getElementById('btn-global-add'),
+
+    // Auth
+    authErr:     el('auth-error-message'),
+    authErrTxt:  el('auth-error-text'),
+    authBtn:     el('auth-submit-btn'),
+    togglePwd:   el('toggle-password'),
+
+    // Sidebar
+    sidebarName: el('sidebar-user-name'),
+    sidebarBds:  el('sidebar-bds-name'),
+    sidebarAvt:  el('sidebar-avatar'),
+    logoutBtn:   el('btn-logout'),
+    headerTitle: el('header-title'),
+
+    // Dashboard
+    dashReg:      el('dash-reg-count'),
+    dashProgress: el('dash-reg-progress'),
+    dashProgTxt:  el('dash-reg-progress-text'),
+    dashEvents:   el('dash-event-count'),
+    dashRank:     el('dash-rank'),
+    dashRankHint: el('dash-rank-hint'),
+    dashChart:    el('dash-chart-container'),
+    dashUpcoming: el('dash-recent-events'),
+
+    // Events
+    eventsBody:  el('events-table-body'),
+    btnCreate:   el('btn-create-event'),
+
+    // Registrations
+    regBody:     el('registrations-table-body'),
+    regSearch:   el('reg-search'),
+    regFilter:   el('reg-filter-status'),
+    regExport:   el('btn-export-reg'),
+    regLabel:    el('reg-count-label'),
+    regBadge:    el('badge-registrations'),
+
+    // Leaderboard
+    lbPodium:    el('leaderboard-podium'),
+    lbBody:      el('leaderboard-table-body'),
+    lbCount:     el('leaderboard-count'),
+
+    // FAQ
+    faqBox:      el('faq-accordion-container'),
+
+    // Modals
+    modalEvent:  el('modal-event'),
+    modalReg:    el('modal-registration'),
+    formEvent:   el('form-create-event'),
+    formReg:     el('form-registration'),
+    evtBackdrop: el('modal-event-backdrop'),
+    regBackdrop: el('modal-reg-backdrop'),
+
+    // Toast
+    toasts:      el('toast-container'),
+    btnAdd:      el('btn-global-add'),
 };
 
-// ==========================================
-// 3. SYSTÈME DE TOASTS
-// ==========================================
-const Toast = {
-    show(message, type = 'success', duration = 4000) {
-        const colors = {
-            success: 'bg-gray-900 text-white',
-            error:   'bg-red-600 text-white',
-            warning: 'bg-amber-500 text-white',
-            info:    'bg-laurette-700 text-white',
-        };
-        const icons = {
-            success: `<svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>`,
-            error:   `<svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`,
-            warning: `<svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path></svg>`,
-            info:    `<svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
-        };
-        const el = document.createElement('div');
-        el.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-floating text-sm font-semibold toast-enter ${colors[type] || colors.success}`;
-        el.innerHTML = `${icons[type] || icons.success}<span>${message}</span>`;
-        DOM.toastContainer.appendChild(el);
-        setTimeout(() => {
-            el.classList.add('toast-exit');
-            el.addEventListener('animationend', () => el.remove());
-        }, duration);
-    }
-};
-
-// ==========================================
-// 4. ÉCOUTEURS D'ÉVÉNEMENTS
-// ==========================================
-function setupEventListeners() {
-
-    // --- Auth form ---
-    if (DOM.auth.form) {
-        DOM.auth.form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const btn = DOM.auth.submitBtn;
-            btn.innerHTML = `<svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Connexion…`;
-            btn.disabled = true;
-            DOM.auth.errorContainer.classList.add('hidden');
-
-            if (!_sb) { Toast.show('Serveur inaccessible.', 'error'); btn.innerHTML = 'Accéder à mon espace'; btn.disabled = false; return; }
-            const { error } = await _sb.auth.signInWithPassword({
-                email:    DOM.auth.email.value.trim(),
-                password: DOM.auth.password.value,
-            });
-
-            if (error) {
-                DOM.auth.errorText.textContent = error.message === 'Invalid login credentials'
-                    ? 'Identifiants incorrects. Vérifie ton email et ton mot de passe.'
-                    : error.message;
-                DOM.auth.errorContainer.classList.remove('hidden');
-                btn.innerHTML = 'Accéder à mon espace';
-                btn.disabled = false;
-            }
-        });
-    }
-
-    // --- Toggle password visibility ---
-    if (DOM.auth.togglePassword) {
-        DOM.auth.togglePassword.addEventListener('click', () => {
-            const input = DOM.auth.password;
-            input.type = input.type === 'password' ? 'text' : 'password';
-        });
-    }
-
-    // --- Navigation sidebar ---
-    DOM.navItems.forEach(item => {
-        item.addEventListener('click', (e) => {
-            e.preventDefault();
-            const view = item.getAttribute('data-view');
-            if (view) navigateTo(view);
-        });
-    });
-
-    // --- Links inside content that trigger nav ---
-    DOM.navTriggers.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const view = link.getAttribute('data-view');
-            if (view) navigateTo(view);
-        });
-    });
-
-    // --- Logout ---
-    if (DOM.sidebar.logoutBtn) {
-        DOM.sidebar.logoutBtn.addEventListener('click', async () => {
-            await _sb.auth.signOut();
-        });
-    }
-
-    // --- Global add button → registration modal ---
-    if (DOM.btnGlobalAdd) {
-        DOM.btnGlobalAdd.addEventListener('click', openRegistrationModal);
-    }
-
-    // --- Event modal ---
-    const em = DOM.modal.event;
-    if (em.btnCancel)  em.btnCancel.addEventListener('click', closeEventModal);
-    if (em.btnCancel2) em.btnCancel2.addEventListener('click', closeEventModal);
-    if (em.backdrop)   em.backdrop.addEventListener('click', closeEventModal);
-    if (DOM.events.btnCreate) DOM.events.btnCreate.addEventListener('click', () => em.container.classList.remove('hidden'));
-
-    if (em.form) {
-        em.form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!State.profile?.bds_id) return;
-            em.btnSubmit.disabled = true;
-            em.btnSubmit.innerHTML = `<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Création…`;
-
-            const { error } = await _sb.from('events').insert([{
-                title:                  document.getElementById('event-title').value,
-                event_date:             document.getElementById('event-date').value,
-                type:                   document.getElementById('event-type').value,
-                expected_registrations: parseInt(document.getElementById('event-target').value) || 0,
-                bds_id:                 State.profile.bds_id,
-                created_by:             State.user.id,
-                status:                 'planned',
-            }]);
-
-            em.btnSubmit.disabled = false;
-            em.btnSubmit.innerHTML = 'Créer l\'événement';
-
-            if (!error) {
-                closeEventModal();
-                Toast.show('Événement créé avec succès !', 'success');
-                loadEventsData();
-                loadDashboardData();
-            } else {
-                Toast.show('Erreur : ' + error.message, 'error');
-            }
-        });
-    }
-
-    // --- Registration modal ---
-    const rm = DOM.modal.reg;
-    if (rm.btnCancel)  rm.btnCancel.addEventListener('click', closeRegistrationModal);
-    if (rm.btnCancel2) rm.btnCancel2.addEventListener('click', closeRegistrationModal);
-    if (rm.backdrop)   rm.backdrop.addEventListener('click', closeRegistrationModal);
-
-    if (rm.form) {
-        rm.form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!State.profile?.bds_id) return;
-
-            const btn = document.getElementById('btn-submit-reg');
-            btn.disabled = true;
-            btn.innerHTML = `<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Enregistrement…`;
-
-            const eventId = document.getElementById('reg-event-id').value;
-            const payload = {
-                first_name: document.getElementById('reg-first-name').value.trim(),
-                last_name:  document.getElementById('reg-last-name').value.trim(),
-                email:      document.getElementById('reg-email').value.trim(),
-                phone:      document.getElementById('reg-phone').value.trim() || null,
-                bds_id:     State.profile.bds_id,
-                status:     'validated',
-                event_id:   eventId || null,
-            };
-
-            const { error } = await _sb.from('registrations').insert([payload]);
-
-            btn.disabled = false;
-            btn.innerHTML = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Inscrire le donneur`;
-
-            if (!error) {
-                closeRegistrationModal();
-                Toast.show(`${payload.first_name} ${payload.last_name} inscrit(e) avec succès ! 🎉`, 'success');
-                loadDashboardData();
-                if (State.currentView === 'registrations') loadRegistrationsData();
-            } else {
-                Toast.show('Erreur : ' + error.message, 'error');
-            }
-        });
-    }
-
-    // --- Registrations — search + filter ---
-    if (DOM.registrations.search) {
-        DOM.registrations.search.addEventListener('input', debounce(() => renderRegistrationsTable(), 300));
-    }
-    if (DOM.registrations.filterStatus) {
-        DOM.registrations.filterStatus.addEventListener('change', () => renderRegistrationsTable());
-    }
-
-    // --- Registrations — export CSV ---
-    if (DOM.registrations.exportBtn) {
-        DOM.registrations.exportBtn.addEventListener('click', exportRegistrationsCSV);
-    }
+// ── 5. TOASTS ────────────────────────────────────────────────
+function toast(msg, type = 'success') {
+    if (!D.toasts) return;
+    const icons = {
+        success: '✓', error: '✕', warning: '⚠', info: 'ℹ'
+    };
+    const colors = {
+        success: 'bg-gray-900 text-white',
+        error:   'bg-red-600 text-white',
+        warning: 'bg-amber-500 text-white',
+        info:    'bg-laurette-700 text-white',
+    };
+    const t = document.createElement('div');
+    t.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-floating text-sm font-semibold toast-enter ${colors[type] || colors.success}`;
+    t.innerHTML = `<span>${icons[type] || '✓'}</span><span>${msg}</span>`;
+    D.toasts.appendChild(t);
+    setTimeout(() => { t.classList.add('toast-exit'); t.addEventListener('animationend', () => t.remove()); }, 4000);
 }
 
-// ==========================================
-// 5. HELPERS
-// ==========================================
-function debounce(fn, delay) {
-    let t;
-    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
-}
-
-function closeEventModal() {
-    DOM.modal.event.container.classList.add('hidden');
-    DOM.modal.event.form.reset();
-}
-
-async function openRegistrationModal() {
-    // Populate event selector
-    const select = DOM.modal.reg.eventSelect;
-    select.innerHTML = '<option value="">— Aucun événement —</option>';
-    if (State.events.length === 0) await loadEventsData(false);
-    State.events.forEach(ev => {
-        const opt = document.createElement('option');
-        opt.value = ev.id;
-        opt.textContent = `${ev.title} (${new Date(ev.event_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })})`;
-        select.appendChild(opt);
-    });
-    DOM.modal.reg.form.reset();
-    DOM.modal.reg.container.classList.remove('hidden');
-}
-
-function closeRegistrationModal() {
-    DOM.modal.reg.container.classList.add('hidden');
-    DOM.modal.reg.form.reset();
-}
-
-// ==========================================
-// 6. GESTION DES SESSIONS
-// ==========================================
-async function checkActiveSession() {
-    // Si Supabase n'est pas initialisé, on affiche juste l'auth
-    if (!_sb) {
-        DOM.auth.errorText.textContent = 'Erreur : impossible de contacter le serveur.';
-        DOM.auth.errorContainer.classList.remove('hidden');
-        return; // view-auth est déjà visible par défaut
+// ── 6. AUTH ──────────────────────────────────────────────────
+async function initAuth() {
+    if (!_db) {
+        showError('Impossible de contacter le serveur Supabase.');
+        return;
     }
 
-    try {
-        const { data: { session }, error } = await _sb.auth.getSession();
-        if (error) throw error;
-        if (session) {
-            await onSignIn(session.user);
-        }
-        // Si pas de session : view-auth est déjà visible, rien à faire
-    } catch (err) {
-        console.error('Erreur init Supabase:', err);
-        DOM.auth.errorText.textContent = 'Erreur réseau. Vérifie ta connexion internet.';
-        DOM.auth.errorContainer.classList.remove('hidden');
-        // view-auth est déjà visible, rien à faire
+    // Session existante ?
+    const { data: { session } } = await _db.auth.getSession();
+    if (session) {
+        await onLogin(session.user);
     }
 
-    if (!_sb) return;
-    _sb.auth.onAuthStateChange(async (event, session) => {
+    // Écouter les changements d'auth
+    _db.auth.onAuthStateChange(async (event, session) => {
         if (event === 'SIGNED_IN' && session) {
-            await onSignIn(session.user);
+            await onLogin(session.user);
         } else if (event === 'SIGNED_OUT') {
-            showAuthScreen();
+            onLogout();
         }
     });
 }
 
-async function onSignIn(user) {
+async function onLogin(user) {
     State.user = user;
-    DOM.views.auth.classList.add('hidden');
-    DOM.views.app.classList.remove('hidden');
-    await loadUserProfile();
-    navigateTo('dashboard');
+    D.authView.classList.add('hidden');
+    D.appShell.classList.remove('hidden');
+    await loadProfile();
+    goTo('dashboard');
 }
 
-function showAuthScreen() {
-    State.user    = null;
-    State.profile = null;
-    DOM.views.app.classList.add('hidden');
-    DOM.views.auth.classList.remove('hidden');
-    if (DOM.auth.submitBtn) {
-        DOM.auth.submitBtn.innerHTML = 'Accéder à mon espace';
-        DOM.auth.submitBtn.disabled  = false;
+function onLogout() {
+    State.user = State.profile = State.bdsId = null;
+    D.appShell.classList.add('hidden');
+    D.authView.classList.remove('hidden');
+    if (D.authBtn) { D.authBtn.textContent = 'Accéder à mon espace'; D.authBtn.disabled = false; }
+}
+
+function showError(msg) {
+    if (D.authErr) D.authErr.classList.remove('hidden');
+    if (D.authErrTxt) D.authErrTxt.textContent = msg;
+}
+
+// Exposée en global pour le bouton inline du HTML
+window.handleLogin = async function() {
+    const email = el('email')?.value.trim();
+    const pwd   = el('password')?.value;
+    if (!email || !pwd) { showError('Remplis tous les champs.'); return; }
+    if (!_db) { showError('Serveur inaccessible.'); return; }
+
+    D.authBtn.disabled = true;
+    D.authBtn.innerHTML = '<svg class="animate-spin h-4 w-4 text-white inline mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Connexion…';
+    if (D.authErr) D.authErr.classList.add('hidden');
+
+    const { error } = await _db.auth.signInWithPassword({ email, password: pwd });
+
+    if (error) {
+        showError(error.message === 'Invalid login credentials'
+            ? 'Email ou mot de passe incorrect.'
+            : error.message);
+        D.authBtn.disabled = false;
+        D.authBtn.textContent = 'Accéder à mon espace';
     }
-}
+    // Si succès → onAuthStateChange déclenche onLogin automatiquement
+};
 
-// ==========================================
-// 7. ROUTAGE
-// ==========================================
-function navigateTo(viewName) {
-    State.currentView = viewName;
+// ── 7. PROFIL ────────────────────────────────────────────────
+async function loadProfile() {
+    if (!State.user || !_db) return;
 
-    DOM.navItems.forEach(item => {
-        const isActive = item.getAttribute('data-view') === viewName;
-        item.classList.toggle('bg-laurette-50',    isActive);
-        item.classList.toggle('text-laurette-700', isActive);
-        item.classList.toggle('text-gray-600',     !isActive);
-        item.classList.toggle('hover:bg-gray-50',  !isActive);
-        item.classList.toggle('hover:text-gray-900', !isActive);
-        const svg = item.querySelector('svg');
-        if (svg) {
-            svg.classList.toggle('text-laurette-700', isActive);
-            svg.classList.toggle('text-gray-400',     !isActive);
-        }
-        if (isActive) DOM.headerTitle.textContent = item.textContent.trim();
-    });
-
-    DOM.sections.forEach(section => {
-        section.id === `content-${viewName}`
-            ? section.classList.remove('hidden')
-            : section.classList.add('hidden');
-    });
-
-    if (viewName === 'dashboard')     loadDashboardData();
-    if (viewName === 'events')        loadEventsData();
-    if (viewName === 'registrations') loadRegistrationsData();
-    if (viewName === 'leaderboard')   loadLeaderboardData();
-    if (viewName === 'faq')           loadFAQData();
-}
-
-// ==========================================
-// 8. CHARGEMENT DES DONNÉES
-// ==========================================
-async function loadUserProfile() {
-    if (!State.user) return;
-    const { data, error } = _sb
+    const { data, error } = await _db
         .from('profiles')
-        .select(`*, bds (name, city)`)
+        .select('id, full_name, role, bds_id, bds(name, city)')
         .eq('id', State.user.id)
         .single();
 
-    if (!error && data) {
-        State.profile = data;
-        DOM.sidebar.userName.textContent = data.full_name || 'Ambassadeur';
-        DOM.sidebar.bdsName.textContent  = data.bds?.name || 'BDS';
-        DOM.sidebar.avatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.full_name || 'A')}&background=5e227f&color=fff&bold=true`;
-    }
-}
-
-// --- Dashboard ---
-async function loadDashboardData() {
-    if (!State.profile?.bds_id) return;
-
-    const bdsId = State.profile.bds_id;
-
-    // Events count
-    const { count: eventsCount } = await _sb.from('events')
-        .select('*', { count: 'exact', head: true })
-        .eq('bds_id', bdsId)
-        .in('status', ['planned', 'confirmed']);
-    DOM.dashboard.eventCount.textContent = eventsCount ?? 0;
-
-    // Registrations count + progress
-    const { count: regCount } = await _sb.from('registrations')
-        .select('*', { count: 'exact', head: true })
-        .eq('bds_id', bdsId)
-        .eq('status', 'validated');
-    const count  = regCount ?? 0;
-    const pct    = Math.min(Math.round((count / State.annualGoal) * 100), 100);
-    DOM.dashboard.regCount.textContent        = count;
-    DOM.dashboard.regProgress.style.width     = pct + '%';
-    DOM.dashboard.regProgressText.textContent = `${pct}% de l'objectif (${State.annualGoal})`;
-
-    // Badge
-    if (DOM.registrations.badge) {
-        DOM.registrations.badge.textContent = count;
-        DOM.registrations.badge.classList.toggle('hidden', count === 0);
+    if (error) {
+        console.error('[loadProfile] error:', error);
+        // Essai sans join si le join échoue
+        const { data: p2 } = await _db.from('profiles').select('*').eq('id', State.user.id).single();
+        if (p2) {
+            State.profile = p2;
+            State.bdsId   = p2.bds_id;
+            D.sidebarName.textContent = p2.full_name || 'Ambassadeur';
+            D.sidebarBds.textContent  = 'BDS';
+        }
+        return;
     }
 
-    // Rank from leaderboard
-    await computeRank(bdsId, count);
+    State.profile = data;
+    State.bdsId   = data.bds_id;
 
-    // Upcoming events
-    const { data: recentEvents } = await _sb.from('events')
-        .select('title, event_date, type, actual_registrations, expected_registrations')
-        .eq('bds_id', bdsId)
-        .in('status', ['planned', 'confirmed'])
-        .order('event_date', { ascending: true })
-        .limit(5);
-
-    if (recentEvents && recentEvents.length > 0) {
-        DOM.dashboard.recentEvents.innerHTML = recentEvents.map(ev => {
-            const d = new Date(ev.event_date);
-            return `
-            <div class="px-5 py-3.5 flex items-center gap-3 hover:bg-gray-50 transition">
-                <div class="h-10 w-10 bg-laurette-50 rounded-xl flex flex-col items-center justify-center flex-shrink-0 border border-laurette-100">
-                    <span class="text-xs font-black text-laurette-700 leading-none">${d.getDate()}</span>
-                    <span class="text-[9px] font-bold text-laurette-400 uppercase leading-none mt-0.5">${d.toLocaleString('fr-FR',{month:'short'})}</span>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-bold text-gray-900 truncate">${ev.title}</p>
-                    <p class="text-xs text-gray-500 capitalize">${ev.type}</p>
-                </div>
-                <div class="text-right flex-shrink-0">
-                    <p class="text-xs font-bold text-gray-700">${ev.actual_registrations ?? 0}<span class="text-gray-400 font-normal"> / ${ev.expected_registrations}</span></p>
-                </div>
-            </div>`;
-        }).join('');
-    } else {
-        DOM.dashboard.recentEvents.innerHTML = emptyState('Aucun événement planifié.', 'Créez votre premier événement.', 'events');
+    D.sidebarName.textContent = data.full_name || 'Ambassadeur';
+    D.sidebarBds.textContent  = data.bds?.name || 'BDS';
+    if (D.sidebarAvt) {
+        D.sidebarAvt.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.full_name || 'A')}&background=5e227f&color=fff&bold=true`;
     }
-
-    // Simple sparkline chart
-    buildSparklineChart();
+    // Stocker le bds_id pour les autres pages
+    if (data.bds_id) localStorage.setItem('my_bds_id', data.bds_id);
 }
 
-async function computeRank(bdsId, myCount) {
-    // Get total for each BDS and determine rank
-    const { data: allCounts } = _sb
-        .from('registrations')
-        .select('bds_id')
-        .eq('status', 'validated');
+// ── 8. NAVIGATION ────────────────────────────────────────────
+function goTo(view) {
+    State.currentView = view;
 
-    if (!allCounts) return;
-
-    const map = {};
-    allCounts.forEach(r => { map[r.bds_id] = (map[r.bds_id] || 0) + 1; });
-    map[bdsId] = myCount;
-
-    const sorted = Object.values(map).sort((a, b) => b - a);
-    const rank   = sorted.indexOf(myCount) + 1;
-    const total  = Object.keys(map).length;
-
-    DOM.dashboard.rank.textContent     = `#${rank}`;
-    DOM.dashboard.rankHint.textContent = `Sur ${total} BDS en compétition`;
-}
-
-function buildSparklineChart() {
-    // Generate realistic-looking mock data (replace with real data if table exists)
-    const container = DOM.dashboard.chartContainer;
-    const days  = 30;
-    const values = Array.from({ length: days }, (_, i) => Math.max(0, Math.round(Math.random() * 5 + Math.sin(i / 4) * 3)));
-    const max   = Math.max(...values, 1);
-    const w     = 100 / days;
-
-    container.innerHTML = `
-    <svg class="w-full h-full" viewBox="0 0 100 40" preserveAspectRatio="none">
-        <defs>
-            <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#8a4cae" stop-opacity="0.15"/>
-                <stop offset="100%" stop-color="#8a4cae" stop-opacity="0"/>
-            </linearGradient>
-        </defs>
-        <!-- Area fill -->
-        <path d="${buildPath(values, max, true)}" fill="url(#grad)"/>
-        <!-- Line -->
-        <path d="${buildPath(values, max, false)}" fill="none" stroke="#8a4cae" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
-        <!-- Dots on last point -->
-        <circle cx="${(days - 1) * w + w / 2}" cy="${40 - (values[days-1] / max) * 36 - 2}" r="1.5" fill="#b4d429"/>
-    </svg>
-    <div class="absolute bottom-0 left-0 right-0 flex justify-between px-1">
-        ${['J-30','','','','J-15','','','','Auj.'].map(l => `<span class="text-[8px] text-gray-300 font-semibold">${l}</span>`).join('')}
-    </div>`;
-}
-
-function buildPath(values, max, close) {
-    const days = values.length;
-    const w    = 100 / days;
-    let   d    = '';
-    values.forEach((v, i) => {
-        const x = i * w + w / 2;
-        const y = 40 - (v / max) * 36 - 2;
-        d += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+    D.navItems.forEach(item => {
+        const active = item.getAttribute('data-view') === view;
+        item.classList.toggle('bg-laurette-50',    active);
+        item.classList.toggle('text-laurette-700', active);
+        item.classList.toggle('text-gray-600',    !active);
+        item.classList.toggle('hover:bg-gray-50', !active);
+        if (D.headerTitle && active) D.headerTitle.textContent = item.textContent.trim();
     });
-    if (close) {
-        d += ` L ${(days - 1) * w + w / 2} 40 L ${w / 2} 40 Z`;
-    }
-    return d;
+
+    D.sections.forEach(s => {
+        s.id === `content-${view}`
+            ? s.classList.remove('hidden')
+            : s.classList.add('hidden');
+    });
+
+    if (view === 'dashboard')     loadDashboard();
+    if (view === 'events')        loadEvents();
+    if (view === 'registrations') loadRegistrations();
+    if (view === 'leaderboard')   loadLeaderboard();
+    if (view === 'faq')           loadFAQ();
 }
 
-// --- Events ---
-async function loadEventsData(updateState = true) {
-    if (!State.profile?.bds_id) return;
+// ── 9. DASHBOARD ─────────────────────────────────────────────
+async function loadDashboard() {
+    if (!State.bdsId || !_db) return;
 
-    const { data, error } = await _sb.from('events')
-        .select('*')
-        .eq('bds_id', State.profile.bds_id)
+    // Inscriptions validées
+    const { count: regCount } = await _db
+        .from('registrations').select('*', { count: 'exact', head: true })
+        .eq('bds_id', State.bdsId).eq('status', 'validated');
+
+    const count = regCount ?? 0;
+    const pct   = Math.min(Math.round((count / ANNUAL_GOAL) * 100), 100);
+    if (D.dashReg)      D.dashReg.textContent      = count;
+    if (D.dashProgress) D.dashProgress.style.width = pct + '%';
+    if (D.dashProgTxt)  D.dashProgTxt.textContent  = `${pct}% de l'objectif (${ANNUAL_GOAL})`;
+
+    // Badge inscriptions
+    if (D.regBadge) {
+        D.regBadge.textContent = count;
+        D.regBadge.classList.toggle('hidden', count === 0);
+    }
+
+    // Événements actifs
+    const { count: evtCount } = await _db
+        .from('events').select('*', { count: 'exact', head: true })
+        .eq('bds_id', State.bdsId).in('status', ['planned', 'confirmed']);
+    if (D.dashEvents) D.dashEvents.textContent = evtCount ?? 0;
+
+    // Classement
+    await loadRank(count);
+
+    // Prochains événements
+    const { data: upcoming } = await _db
+        .from('events').select('title, event_date, type, actual_registrations, expected_registrations')
+        .eq('bds_id', State.bdsId).in('status', ['planned', 'confirmed'])
+        .order('event_date', { ascending: true }).limit(5);
+
+    if (D.dashUpcoming) {
+        if (upcoming && upcoming.length) {
+            D.dashUpcoming.innerHTML = upcoming.map(ev => {
+                const d = new Date(ev.event_date);
+                return `<div class="px-5 py-3.5 flex items-center gap-3 hover:bg-gray-50 transition">
+                    <div class="h-10 w-10 bg-laurette-50 rounded-xl flex flex-col items-center justify-center flex-shrink-0 border border-laurette-100">
+                        <span class="text-xs font-black text-laurette-700 leading-none">${d.getDate()}</span>
+                        <span class="text-[9px] font-bold text-laurette-400 uppercase leading-none mt-0.5">${d.toLocaleString('fr-FR',{month:'short'})}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold text-gray-900 truncate">${ev.title}</p>
+                        <p class="text-xs text-gray-500 capitalize">${ev.type}</p>
+                    </div>
+                    <p class="text-xs font-bold text-gray-500 flex-shrink-0">${ev.actual_registrations ?? 0}/${ev.expected_registrations}</p>
+                </div>`;
+            }).join('');
+        } else {
+            D.dashUpcoming.innerHTML = `<div class="p-8 text-center text-sm text-gray-400">Aucun événement planifié.</div>`;
+        }
+    }
+
+    // Sparkline
+    drawSparkline();
+}
+
+async function loadRank(myCount) {
+    const { data } = await _db.from('registrations').select('bds_id').eq('status', 'validated');
+    if (!data) return;
+    const counts = {};
+    data.forEach(r => { counts[r.bds_id] = (counts[r.bds_id] || 0) + 1; });
+    counts[State.bdsId] = myCount;
+    const sorted = Object.values(counts).sort((a, b) => b - a);
+    const rank   = sorted.indexOf(myCount) + 1;
+    if (D.dashRank)     D.dashRank.textContent     = `#${rank}`;
+    if (D.dashRankHint) D.dashRankHint.textContent = `Sur ${Object.keys(counts).length} BDS`;
+}
+
+function drawSparkline() {
+    if (!D.dashChart) return;
+    const vals = Array.from({ length: 30 }, (_, i) =>
+        Math.max(0, Math.round(Math.random() * 4 + Math.sin(i / 5) * 2)));
+    const max  = Math.max(...vals, 1);
+    const w    = 100 / vals.length;
+    let pathL  = '', pathA = '';
+    vals.forEach((v, i) => {
+        const x = i * w + w / 2;
+        const y = 38 - (v / max) * 34;
+        pathL += `${i === 0 ? 'M' : 'L'} ${x} ${y} `;
+        pathA += `${i === 0 ? 'M' : 'L'} ${x} ${y} `;
+    });
+    pathA += `L ${(vals.length - 1) * w + w / 2} 40 L ${w / 2} 40 Z`;
+    D.dashChart.innerHTML = `
+    <svg class="w-full h-full" viewBox="0 0 100 40" preserveAspectRatio="none">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#8a4cae" stop-opacity="0.15"/>
+            <stop offset="100%" stop-color="#8a4cae" stop-opacity="0"/>
+        </linearGradient></defs>
+        <path d="${pathA}" fill="url(#g)"/>
+        <path d="${pathL}" fill="none" stroke="#8a4cae" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+}
+
+// ── 10. ÉVÉNEMENTS ───────────────────────────────────────────
+async function loadEvents(updateState = true) {
+    if (!State.bdsId || !_db || !D.eventsBody) return;
+
+    D.eventsBody.innerHTML = loadingRow(5);
+
+    const { data, error } = await _db
+        .from('events').select('*')
+        .eq('bds_id', State.bdsId)
         .order('event_date', { ascending: false });
 
+    if (error) { console.error('[loadEvents]', error); }
     if (updateState && data) State.events = data;
 
-    if (error || !data || data.length === 0) {
-        DOM.events.tableBody.innerHTML = `<tr><td colspan="5" class="px-5 py-12 text-center">
-            ${emptyState('Aucun événement enregistré.', 'Créez votre premier événement de sensibilisation.')}
-        </td></tr>`;
+    if (!data || !data.length) {
+        D.eventsBody.innerHTML = `<tr><td colspan="5">${empty('Aucun événement', 'Créez votre premier événement.')}</td></tr>`;
         return;
     }
 
     const badges = {
-        planned:   '<span class="badge bg-yellow-100 text-yellow-800">Planifié</span>',
-        confirmed: '<span class="badge bg-blue-100 text-blue-800">Confirmé</span>',
-        completed: '<span class="badge bg-green-100 text-green-800">Terminé</span>',
-        cancelled: '<span class="badge bg-red-100 text-red-800">Annulé</span>',
+        planned:   'bg-yellow-100 text-yellow-800',
+        confirmed: 'bg-blue-100 text-blue-800',
+        completed: 'bg-green-100 text-green-800',
+        cancelled: 'bg-red-100 text-red-600',
     };
+    const labels = { planned:'Planifié', confirmed:'Confirmé', completed:'Terminé', cancelled:'Annulé' };
 
-    DOM.events.tableBody.innerHTML = data.map(ev => {
-        const d       = new Date(ev.event_date);
-        const pct     = ev.expected_registrations > 0
-            ? Math.min(Math.round(((ev.actual_registrations ?? 0) / ev.expected_registrations) * 100), 100)
-            : 0;
-        return `
-        <tr class="hover:bg-gray-50/80 transition group">
-            <td class="px-5 py-4 whitespace-nowrap flex items-center gap-3">
-                <div class="h-10 w-10 bg-laurette-50 rounded-xl flex flex-col items-center justify-center border border-laurette-100 flex-shrink-0">
-                    <span class="text-xs font-black text-laurette-700 leading-none">${d.getDate()}</span>
-                    <span class="text-[9px] font-bold text-laurette-400 uppercase leading-none mt-0.5">${d.toLocaleString('fr-FR',{month:'short'})}</span>
-                </div>
-                <div>
-                    <p class="text-sm font-bold text-gray-900">${ev.title}</p>
-                    <p class="text-[10px] text-gray-400 font-semibold">${d.toLocaleDateString('fr-FR',{weekday:'long'})}</p>
-                </div>
-            </td>
+    D.eventsBody.innerHTML = data.map(ev => {
+        const d   = new Date(ev.event_date);
+        const pct = ev.expected_registrations > 0
+            ? Math.min(Math.round(((ev.actual_registrations ?? 0) / ev.expected_registrations) * 100), 100) : 0;
+        return `<tr class="hover:bg-gray-50/80 transition">
             <td class="px-5 py-4 whitespace-nowrap">
-                <span class="text-xs font-semibold text-gray-600 capitalize bg-gray-100 px-2 py-1 rounded-md">${ev.type}</span>
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 bg-laurette-50 rounded-xl flex flex-col items-center justify-center border border-laurette-100 flex-shrink-0">
+                        <span class="text-xs font-black text-laurette-700 leading-none">${d.getDate()}</span>
+                        <span class="text-[9px] font-bold text-laurette-400 uppercase">${d.toLocaleString('fr-FR',{month:'short'})}</span>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-gray-900">${ev.title}</p>
+                        <p class="text-[10px] text-gray-400">${d.toLocaleDateString('fr-FR',{weekday:'long'})}</p>
+                    </div>
+                </div>
             </td>
-            <td class="px-5 py-4 whitespace-nowrap">${badges[ev.status] || badges.planned}</td>
+            <td class="px-5 py-4"><span class="text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-1 rounded-md capitalize">${ev.type}</span></td>
+            <td class="px-5 py-4"><span class="badge ${badges[ev.status] || badges.planned}">${labels[ev.status] || 'Planifié'}</span></td>
             <td class="px-5 py-4 min-w-[120px]">
                 <div class="flex items-center gap-2">
                     <div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div class="h-full rounded-full ${pct >= 100 ? 'bg-flavy-400' : 'bg-laurette-500'} transition-all" style="width:${pct}%"></div>
+                        <div class="h-full rounded-full ${pct >= 100 ? 'bg-flavy-400' : 'bg-laurette-500'}" style="width:${pct}%"></div>
                     </div>
-                    <span class="text-[10px] font-bold text-gray-500">${pct}%</span>
+                    <span class="text-[10px] font-bold text-gray-400">${pct}%</span>
                 </div>
             </td>
-            <td class="px-5 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-900">
-                ${ev.actual_registrations ?? 0} <span class="text-gray-400 font-normal">/ ${ev.expected_registrations}</span>
-            </td>
+            <td class="px-5 py-4 text-right text-sm font-bold text-gray-900">${ev.actual_registrations ?? 0} <span class="text-gray-400 font-normal">/ ${ev.expected_registrations}</span></td>
         </tr>`;
     }).join('');
 }
 
-// --- Registrations ---
-async function loadRegistrationsData() {
-    if (!State.profile?.bds_id) return;
+// ── 11. INSCRIPTIONS ─────────────────────────────────────────
+async function loadRegistrations() {
+    if (!State.bdsId || !_db || !D.regBody) return;
 
-    const { data, error } = await _sb.from('registrations')
-        .select('*, events(title, event_date)')
-        .eq('bds_id', State.profile.bds_id)
+    D.regBody.innerHTML = loadingRow(5);
+
+    const { data, error } = await _db
+        .from('registrations')
+        .select('*, events(title)')
+        .eq('bds_id', State.bdsId)
         .order('created_at', { ascending: false });
 
-    if (error) {
-        Toast.show('Erreur de chargement des inscriptions', 'error');
-        return;
-    }
+    if (error) { console.error('[loadRegistrations]', error); }
 
     State.registrations = data || [];
-    renderRegistrationsTable();
+    renderRegistrations();
 }
 
-function renderRegistrationsTable() {
-    const search       = (DOM.registrations.search?.value || '').toLowerCase().trim();
-    const filterStatus = DOM.registrations.filterStatus?.value || '';
+function renderRegistrations() {
+    const q  = (D.regSearch?.value || '').toLowerCase();
+    const st = D.regFilter?.value || '';
 
-    let rows = State.registrations.filter(r => {
-        const name   = `${r.first_name} ${r.last_name}`.toLowerCase();
-        const email  = (r.email || '').toLowerCase();
-        const matchQ = !search || name.includes(search) || email.includes(search);
-        const matchS = !filterStatus || r.status === filterStatus;
-        return matchQ && matchS;
+    const rows = State.registrations.filter(r => {
+        const name = `${r.first_name} ${r.last_name}`.toLowerCase();
+        return (!q || name.includes(q) || (r.email||'').toLowerCase().includes(q))
+            && (!st || r.status === st);
     });
 
-    if (DOM.registrations.countLabel) {
-        DOM.registrations.countLabel.textContent = `${rows.length} inscription${rows.length !== 1 ? 's' : ''} affichée${rows.length !== 1 ? 's' : ''}`;
-    }
+    if (D.regLabel) D.regLabel.textContent = `${rows.length} inscription${rows.length !== 1 ? 's' : ''}`;
 
-    if (rows.length === 0) {
-        DOM.registrations.tableBody.innerHTML = `<tr><td colspan="5" class="px-5 py-12 text-center">
-            ${emptyState('Aucune inscription trouvée.', search ? 'Essayez un autre terme de recherche.' : 'Les inscriptions créées apparaîtront ici.')}
-        </td></tr>`;
+    if (!rows.length) {
+        D.regBody.innerHTML = `<tr><td colspan="5">${empty('Aucune inscription', q ? 'Essayez un autre terme.' : 'Les inscriptions apparaîtront ici.')}</td></tr>`;
         return;
     }
 
-    const badgeStatus = {
-        validated: '<span class="badge bg-green-100 text-green-700">Validé</span>',
-        pending:   '<span class="badge bg-yellow-100 text-yellow-700">En attente</span>',
-        cancelled: '<span class="badge bg-red-100 text-red-600">Annulé</span>',
+    const statusBadge = {
+        validated: 'bg-green-100 text-green-700',
+        pending:   'bg-yellow-100 text-yellow-700',
+        rejected:  'bg-red-100 text-red-600',
     };
+    const statusLabel = { validated:'Validé', pending:'En attente', rejected:'Rejeté' };
 
-    const initials = r =>
-        `${(r.first_name || '?')[0]}${(r.last_name || '?')[0]}`.toUpperCase();
-
-    DOM.registrations.tableBody.innerHTML = rows.map(r => {
-        const date = r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: '2-digit' }) : '—';
-        const event = r.events ? r.events.title : '—';
-        return `
-        <tr class="hover:bg-gray-50/80 transition">
-            <td class="px-5 py-3.5 whitespace-nowrap flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-laurette-100 flex items-center justify-center flex-shrink-0">
-                    <span class="text-xs font-black text-laurette-700">${initials(r)}</span>
-                </div>
-                <div>
-                    <p class="text-sm font-bold text-gray-900">${r.first_name ?? ''} ${r.last_name ?? ''}</p>
-                    ${r.phone ? `<p class="text-[10px] text-gray-400">${r.phone}</p>` : ''}
+    D.regBody.innerHTML = rows.map(r => {
+        const init = `${(r.first_name||'?')[0]}${(r.last_name||'?')[0]}`.toUpperCase();
+        const date = r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) : '—';
+        return `<tr class="hover:bg-gray-50/80 transition">
+            <td class="px-5 py-3.5">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-laurette-100 flex items-center justify-center text-xs font-black text-laurette-700 flex-shrink-0">${init}</div>
+                    <div>
+                        <p class="text-sm font-bold text-gray-900">${r.first_name ?? ''} ${r.last_name ?? ''}</p>
+                        ${r.phone ? `<p class="text-[10px] text-gray-400">${r.phone}</p>` : ''}
+                    </div>
                 </div>
             </td>
             <td class="px-5 py-3.5 text-sm text-gray-600">${r.email ?? '—'}</td>
-            <td class="px-5 py-3.5 text-sm text-gray-500 max-w-[160px] truncate" title="${event}">${event}</td>
+            <td class="px-5 py-3.5 text-sm text-gray-500 max-w-[150px] truncate">${r.events?.title ?? '—'}</td>
             <td class="px-5 py-3.5 text-xs text-gray-500 whitespace-nowrap">${date}</td>
-            <td class="px-5 py-3.5">${badgeStatus[r.status] || badgeStatus.pending}</td>
+            <td class="px-5 py-3.5"><span class="badge ${statusBadge[r.status] || statusBadge.pending}">${statusLabel[r.status] || 'En attente'}</span></td>
         </tr>`;
     }).join('');
 }
 
-function exportRegistrationsCSV() {
-    const rows = State.registrations;
-    if (!rows.length) { Toast.show('Aucune donnée à exporter.', 'warning'); return; }
-    const headers = ['Prénom','Nom','Email','Téléphone','Statut','Date'];
-    const csv = [
-        headers.join(','),
-        ...rows.map(r => [
-            r.first_name, r.last_name, r.email, r.phone || '',
-            r.status,
-            r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR') : '',
-        ].map(v => `"${v ?? ''}"`).join(',')),
-    ].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `inscriptions_${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    Toast.show('Export CSV généré !', 'success');
-}
+// ── 12. CLASSEMENT ───────────────────────────────────────────
+async function loadLeaderboard() {
+    if (!_db) return;
 
-// --- Leaderboard ---
-async function loadLeaderboardData() {
-    const { data: allRegs } = _sb
-        .from('registrations')
-        .select('bds_id, bds(name, city)')
-        .eq('status', 'validated');
+    const { data } = await _db
+        .from('registrations').select('bds_id, bds(name, city)').eq('status', 'validated');
 
-    if (!allRegs) return;
+    if (!data) return;
 
-    // Count per BDS
     const map = {};
-    allRegs.forEach(r => {
+    data.forEach(r => {
         if (!r.bds_id) return;
         if (!map[r.bds_id]) map[r.bds_id] = { id: r.bds_id, name: r.bds?.name || 'BDS', city: r.bds?.city || '—', count: 0 };
         map[r.bds_id].count++;
     });
 
-    const sorted   = Object.values(map).sort((a, b) => b.count - a.count);
-    State.leaderboard = sorted;
+    const sorted = Object.values(map).sort((a, b) => b.count - a.count);
+    if (D.lbCount) D.lbCount.textContent = `${sorted.length} établissement${sorted.length > 1 ? 's' : ''} actif${sorted.length > 1 ? 's' : ''}`;
 
-    const myBdsId  = State.profile?.bds_id;
-    const total    = sorted.length;
-
-    // Count label
-    if (DOM.leaderboard.count) DOM.leaderboard.count.textContent = `${total} Établissement${total !== 1 ? 's' : ''} actif${total !== 1 ? 's' : ''}`;
-
-    // Podium (top 3)
-    renderPodium(sorted, myBdsId);
+    // Podium
+    if (D.lbPodium) renderPodium(sorted);
 
     // Table
-    if (sorted.length === 0) {
-        DOM.leaderboard.tableBody.innerHTML = `<tr><td colspan="5" class="px-5 py-8 text-center text-gray-400">Aucune donnée disponible.</td></tr>`;
-        return;
-    }
-
-    const rankColors = ['text-yellow-500', 'text-gray-400', 'text-amber-600'];
-    DOM.leaderboard.tableBody.innerHTML = sorted.map((bds, i) => {
-        const rank   = i + 1;
-        const isMe   = bds.id === myBdsId;
-        const pct    = sorted[0].count > 0 ? Math.round((bds.count / sorted[0].count) * 100) : 0;
-        return `
-        <tr class="${isMe ? 'bg-laurette-50/60 border-l-4 border-l-laurette-700' : 'hover:bg-gray-50/80 transition'}">
-            <td class="px-5 py-3.5 text-center font-black text-base ${rankColors[i] || 'text-gray-400'}">${rank}</td>
+    if (!D.lbBody) return;
+    const max = sorted[0]?.count || 1;
+    const rankColors = ['text-yellow-500','text-gray-400','text-amber-600'];
+    D.lbBody.innerHTML = sorted.map((b, i) => {
+        const pct  = Math.round((b.count / max) * 100);
+        const isMe = b.id === State.bdsId;
+        return `<tr class="${isMe ? 'bg-laurette-50/60 border-l-4 border-l-laurette-700' : 'hover:bg-gray-50/70 transition'}">
+            <td class="px-5 py-3.5 text-center font-black text-base ${rankColors[i] || 'text-gray-400'}">${i + 1}</td>
             <td class="px-5 py-3.5">
-                <div class="flex items-center gap-2">
-                    <div class="w-7 h-7 rounded-full bg-laurette-100 flex items-center justify-center text-[9px] font-black text-laurette-700 flex-shrink-0">
-                        ${bds.name.slice(0, 2).toUpperCase()}
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-full bg-laurette-100 text-laurette-700 text-[10px] font-black flex items-center justify-center flex-shrink-0">
+                        ${b.name.replace('BDS ','').slice(0,2).toUpperCase()}
                     </div>
-                    <span class="font-bold text-gray-900 text-sm">${bds.name}</span>
-                    ${isMe ? '<span class="text-[9px] font-black bg-laurette-700 text-white px-1.5 py-0.5 rounded uppercase">Vous</span>' : ''}
+                    <span class="font-bold text-gray-900 text-sm">${b.name}</span>
+                    ${isMe ? '<span class="text-[9px] font-black bg-laurette-700 text-white px-1.5 py-0.5 rounded">Vous</span>' : ''}
                 </div>
             </td>
-            <td class="px-5 py-3.5 text-sm text-gray-500">${bds.city}</td>
-            <td class="px-5 py-3.5 min-w-[100px]">
+            <td class="px-5 py-3.5 text-sm text-gray-500">${b.city}</td>
+            <td class="px-5 py-3.5 min-w-[120px]">
                 <div class="flex items-center gap-2">
                     <div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                         <div class="h-full bg-laurette-500 rounded-full" style="width:${pct}%"></div>
                     </div>
                 </div>
             </td>
-            <td class="px-5 py-3.5 text-right font-black text-base ${isMe ? 'text-laurette-700' : 'text-gray-900'}">${bds.count}</td>
+            <td class="px-5 py-3.5 text-right font-black text-base ${isMe ? 'text-laurette-700' : 'text-gray-900'}">${b.count}</td>
         </tr>`;
     }).join('');
 }
 
-function renderPodium(sorted, myBdsId) {
-    const top = sorted.slice(0, 3);
-    while (top.length < 3) top.push(null);
-    // Podium order: [2nd, 1st, 3rd]
-    const order = [top[1], top[0], top[2]];
-    const medals   = ['🥈', '🥇', '🥉'];
-    const heights  = ['h-24', 'h-32', 'h-20'];
-    const borders  = ['border-t-gray-400', 'border-t-yellow-400', 'border-t-amber-600'];
-    const rankBg   = ['bg-gray-400', 'bg-yellow-400', 'bg-amber-600'];
-    const rankNums = [2, 1, 3];
-
-    DOM.leaderboard.podium.innerHTML = order.map((bds, i) => {
-        if (!bds) return `<div class="flex flex-col items-center space-y-2 opacity-30">
-            <div class="w-14 h-14 rounded-full border-2 border-dashed border-gray-300"></div>
-            <div class="bg-white border-t-4 ${borders[i]} rounded-t-xl w-full ${heights[i]} flex items-center justify-center">
-                <span class="text-xs text-gray-300">—</span>
-            </div>
-        </div>`;
-        const isMe = bds.id === myBdsId;
-        return `
-        <div class="flex flex-col items-center space-y-2">
-            <div class="relative">
-                ${rankNums[i] === 1 ? '<div class="absolute -top-4 left-1/2 -translate-x-1/2 text-yellow-400 text-sm">👑</div>' : ''}
-                <div class="w-12 h-12 rounded-full ${isMe ? 'bg-laurette-700' : 'bg-laurette-100'} flex items-center justify-center font-black ${isMe ? 'text-white' : 'text-laurette-700'} text-xs border-2 ${isMe ? 'border-laurette-500' : 'border-laurette-200'} shadow-md">
-                    ${bds.name.slice(0, 2).toUpperCase()}
+function renderPodium(sorted) {
+    const top   = [sorted[0], sorted[1], sorted[2]];
+    const order = [top[1], top[0], top[2]]; // affichage : 2, 1, 3
+    const conf  = [
+        { border:'border-gray-300',  bg:'bg-gray-400',  h:'h-28', rank:2 },
+        { border:'border-yellow-400',bg:'bg-yellow-400',h:'h-36', rank:1, crown:true },
+        { border:'border-amber-500', bg:'bg-amber-500', h:'h-24', rank:3 },
+    ];
+    D.lbPodium.innerHTML = `<div class="grid grid-cols-3 gap-3 max-w-lg mx-auto pt-8 items-end text-center">
+        ${order.map((b, i) => {
+            if (!b) return `<div class="flex flex-col items-center gap-2 opacity-20">
+                <div class="w-12 h-12 rounded-full border-2 border-dashed border-gray-300"></div>
+                <div class="bg-white border-t-4 ${conf[i].border} rounded-t-xl w-full ${conf[i].h}"></div>
+            </div>`;
+            const isMe = b.id === State.bdsId;
+            const init = b.name.replace('BDS ','').slice(0,2).toUpperCase();
+            return `<div class="flex flex-col items-center gap-2">
+                <div class="relative">
+                    ${conf[i].crown ? '<div class="absolute -top-5 left-1/2 -translate-x-1/2 text-yellow-400 animate-bounce">👑</div>' : ''}
+                    <div class="w-12 h-12 rounded-full border-4 ${conf[i].border} shadow-md flex items-center justify-center font-black text-sm ${isMe ? 'bg-laurette-700 text-white' : 'bg-white text-laurette-700'}">
+                        ${init}
+                    </div>
+                    <span class="absolute -bottom-1 -right-1 ${conf[i].bg} text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white">${conf[i].rank}</span>
                 </div>
-                <span class="absolute -bottom-1 -right-1 ${rankBg[i]} text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white">${rankNums[i]}</span>
-            </div>
-            <div class="bg-white border-t-4 ${borders[i]} rounded-t-xl shadow-sm w-full ${heights[i]} p-2 flex flex-col justify-between">
-                <p class="text-[10px] font-bold text-gray-800 truncate text-center">${bds.name}</p>
-                <div class="text-center">
-                    <span class="text-lg font-black text-gray-900">${bds.count}</span>
-                    <span class="block text-[9px] text-gray-400 uppercase font-bold">Dons</span>
+                <div class="bg-white border-t-4 ${conf[i].border} rounded-t-xl shadow-sm w-full ${conf[i].h} p-3 flex flex-col justify-between">
+                    <p class="text-[10px] font-bold text-gray-800 truncate">${b.name.replace('BDS ','')}</p>
+                    <div>
+                        <span class="text-lg font-black text-gray-900">${b.count}</span>
+                        <span class="block text-[9px] text-gray-400 uppercase font-bold">Inscrits</span>
+                    </div>
                 </div>
-            </div>
-        </div>`;
-    }).join('');
+            </div>`;
+        }).join('')}
+    </div>`;
 }
 
-// --- FAQ ---
-async function loadFAQData() {
-    if (State.faqs.length === 0) {
-        const { data } = await _sb.from('faq_items')
-            .select('*')
-            .eq('is_active', true)
-            .order('order_index', { ascending: true });
-        if (data) State.faqs = data;
-    }
+// ── 13. FAQ ──────────────────────────────────────────────────
+async function loadFAQ() {
+    if (!_db || !D.faqBox) return;
 
+    if (State.faqs.length > 0) { renderFAQ(); return; }
+
+    const { data, error } = await _db
+        .from('faq_items').select('*')
+        .eq('is_active', true)
+        .order('order_index', { ascending: true });
+
+    if (error) { console.error('[loadFAQ]', error); }
+
+    State.faqs = data || [];
+    renderFAQ();
+}
+
+function renderFAQ() {
+    if (!D.faqBox) return;
     if (!State.faqs.length) {
-        DOM.faq.container.innerHTML = `<div class="text-center py-12 text-gray-400">
-            ${emptyState('Aucun article FAQ disponible.', 'Le contenu sera bientôt disponible.')}
-        </div>`;
+        D.faqBox.innerHTML = `<div class="text-center py-12 text-gray-400 text-sm">Aucun article disponible.</div>`;
         return;
     }
-
-    DOM.faq.container.innerHTML = State.faqs.map((faq, i) => `
-        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden faq-item" id="faq-${i}">
-            <button class="w-full px-5 py-4 flex justify-between items-center text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-laurette-500 faq-trigger" aria-expanded="false" aria-controls="faq-body-${i}">
-                <span class="font-bold text-gray-900 text-sm pr-4">${faq.question}</span>
-                <svg class="h-4 w-4 text-gray-400 faq-icon transition-transform flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+    D.faqBox.innerHTML = State.faqs.map((f, i) => `
+        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <button class="w-full px-5 py-4 flex justify-between items-center text-left faq-btn" data-i="${i}">
+                <span class="font-bold text-gray-900 text-sm pr-4">${f.question}</span>
+                <svg class="h-4 w-4 text-gray-400 faq-icon flex-shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
-            <div class="faq-content hidden px-5 pb-5 text-gray-600 text-sm leading-relaxed border-t border-gray-50 bg-gray-50/30 pt-4" id="faq-body-${i}">${faq.answer}</div>
-        </div>
-    `).join('');
+            <div class="faq-body hidden px-5 pb-5 pt-3 text-sm text-gray-600 leading-relaxed border-t border-gray-50 bg-gray-50/30">${f.answer}</div>
+        </div>`).join('');
 
-    document.querySelectorAll('.faq-trigger').forEach(trigger => {
-        trigger.addEventListener('click', function() {
-            const content = this.nextElementSibling;
-            const icon    = this.querySelector('.faq-icon');
-            const isOpen  = !content.classList.contains('hidden');
-
-            document.querySelectorAll('.faq-content').forEach(c => c.classList.add('hidden'));
-            document.querySelectorAll('.faq-icon').forEach(i => i.classList.remove('rotate-180'));
-            document.querySelectorAll('.faq-trigger').forEach(t => t.setAttribute('aria-expanded', 'false'));
-
-            if (!isOpen) {
-                content.classList.remove('hidden');
-                icon.classList.add('rotate-180');
-                this.setAttribute('aria-expanded', 'true');
-            }
+    D.faqBox.querySelectorAll('.faq-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const body = btn.nextElementSibling;
+            const icon = btn.querySelector('.faq-icon');
+            const open = !body.classList.contains('hidden');
+            D.faqBox.querySelectorAll('.faq-body').forEach(b => b.classList.add('hidden'));
+            D.faqBox.querySelectorAll('.faq-icon').forEach(ic => ic.classList.remove('rotate-180'));
+            if (!open) { body.classList.remove('hidden'); icon.classList.add('rotate-180'); }
         });
     });
 }
 
-// ==========================================
-// 9. HELPERS UI
-// ==========================================
-function emptyState(title, subtitle = '', navTarget = null) {
-    const link = navTarget
-        ? `<button data-view="${navTarget}" class="nav-trigger-link mt-3 text-sm font-bold text-laurette-700 hover:underline">Commencer →</button>`
-        : '';
-    return `
-    <div class="py-8 flex flex-col items-center gap-2 text-center">
+// ── 14. MODALS ───────────────────────────────────────────────
+function openModal(modal) { modal?.classList.remove('hidden'); }
+function closeModal(modal, form) { modal?.classList.add('hidden'); form?.reset(); }
+
+// Modal événement
+function openEventModal()      { openModal(D.modalEvent); }
+function closeEventModal()     { closeModal(D.modalEvent, D.formEvent); }
+function openRegModal()        { populateEventSelect(); openModal(D.modalReg); }
+function closeRegModal()       { closeModal(D.modalReg, D.formReg); }
+
+async function populateEventSelect() {
+    const sel = el('reg-event-id');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">— Aucun événement —</option>';
+    if (!State.events.length) await loadEvents(true);
+    State.events.forEach(ev => {
+        const o = document.createElement('option');
+        o.value       = ev.id;
+        o.textContent = `${ev.title} (${new Date(ev.event_date).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})})`;
+        sel.appendChild(o);
+    });
+}
+
+// ── 15. ÉCOUTEURS ────────────────────────────────────────────
+function setupListeners() {
+
+    // Toggle password
+    D.togglePwd?.addEventListener('click', () => {
+        const p = el('password');
+        if (p) p.type = p.type === 'password' ? 'text' : 'password';
+    });
+
+    // Navigation
+    D.navItems.forEach(item => {
+        item.addEventListener('click', e => {
+            e.preventDefault();
+            const v = item.getAttribute('data-view');
+            if (v) goTo(v);
+        });
+    });
+
+    // Liens internes qui déclenchent la nav
+    document.querySelectorAll('.nav-trigger-link').forEach(link => {
+        link.addEventListener('click', e => {
+            e.preventDefault();
+            const v = link.getAttribute('data-view');
+            if (v) goTo(v);
+        });
+    });
+
+    // Déconnexion
+    D.logoutBtn?.addEventListener('click', () => _db?.auth.signOut());
+
+    // Bouton + global
+    D.btnAdd?.addEventListener('click', openRegModal);
+
+    // Modal événement
+    D.btnCreate?.addEventListener('click', openEventModal);
+    el('btn-cancel-event')?.addEventListener('click', closeEventModal);
+    el('btn-cancel-event-2')?.addEventListener('click', closeEventModal);
+    D.evtBackdrop?.addEventListener('click', closeEventModal);
+
+    D.formEvent?.addEventListener('submit', async e => {
+        e.preventDefault();
+        if (!State.bdsId || !_db) return;
+        const btn = D.formEvent.querySelector('button[type=submit]');
+        if (btn) { btn.disabled = true; btn.textContent = 'Création…'; }
+
+        const { error } = await _db.from('events').insert([{
+            title:                  el('event-title')?.value,
+            event_date:             el('event-date')?.value,
+            type:                   el('event-type')?.value,
+            expected_registrations: parseInt(el('event-target')?.value) || 0,
+            bds_id:     State.bdsId,
+            created_by: State.user.id,
+            status:     'planned',
+        }]);
+
+        if (btn) { btn.disabled = false; btn.textContent = "Créer l'événement"; }
+        if (!error) {
+            closeEventModal();
+            toast('Événement créé !', 'success');
+            loadEvents();
+            loadDashboard();
+        } else {
+            toast('Erreur : ' + error.message, 'error');
+        }
+    });
+
+    // Modal inscription
+    el('btn-cancel-reg')?.addEventListener('click', closeRegModal);
+    el('btn-cancel-reg-2')?.addEventListener('click', closeRegModal);
+    D.regBackdrop?.addEventListener('click', closeRegModal);
+
+    D.formReg?.addEventListener('submit', async e => {
+        e.preventDefault();
+        if (!State.bdsId || !_db) return;
+        const btn = D.formReg.querySelector('button[type=submit]');
+        if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
+
+        const payload = {
+            first_name:   el('reg-first-name')?.value.trim(),
+            last_name:    el('reg-last-name')?.value.trim(),
+            email:        el('reg-email')?.value.trim(),
+            phone:        el('reg-phone')?.value.trim() || null,
+            bds_id:       State.bdsId,
+            ambassador_id: State.user.id,
+            event_id:     el('reg-event-id')?.value || null,
+            status:       'validated',
+        };
+
+        const { error } = await _db.from('registrations').insert([payload]);
+
+        if (btn) { btn.disabled = false; btn.innerHTML = '✓ Inscrire le donneur'; }
+        if (!error) {
+            closeRegModal();
+            toast(`${payload.first_name} ${payload.last_name} inscrit(e) !`, 'success');
+            loadDashboard();
+            if (State.currentView === 'registrations') loadRegistrations();
+        } else {
+            toast('Erreur : ' + error.message, 'error');
+        }
+    });
+
+    // Search & filter inscriptions
+    D.regSearch?.addEventListener('input', debounce(renderRegistrations, 300));
+    D.regFilter?.addEventListener('change', renderRegistrations);
+
+    // Export CSV
+    D.regExport?.addEventListener('click', exportCSV);
+}
+
+// ── 16. UTILITAIRES ──────────────────────────────────────────
+function debounce(fn, ms) {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+function loadingRow(cols) {
+    return `<tr><td colspan="${cols}" class="px-5 py-10 text-center">
+        <div class="flex flex-col items-center gap-2">
+            <div class="w-7 h-7 border-2 border-laurette-200 border-t-laurette-700 rounded-full animate-spin"></div>
+            <p class="text-sm text-gray-400">Chargement…</p>
+        </div>
+    </td></tr>`;
+}
+
+function empty(title, sub = '') {
+    return `<div class="py-10 flex flex-col items-center gap-2 text-center">
         <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mb-1">
-            <svg class="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+            <svg class="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         </div>
         <p class="text-sm font-bold text-gray-500">${title}</p>
-        ${subtitle ? `<p class="text-xs text-gray-400">${subtitle}</p>` : ''}
-        ${link}
+        ${sub ? `<p class="text-xs text-gray-400">${sub}</p>` : ''}
     </div>`;
 }
 
-// ==========================================
-// 10. INITIALISATION
-// ==========================================
-setupEventListeners();
-checkActiveSession();
+function exportCSV() {
+    if (!State.registrations.length) { toast('Aucune donnée à exporter.', 'warning'); return; }
+    const rows = [
+        ['Prénom','Nom','Email','Téléphone','Statut','Date'],
+        ...State.registrations.map(r => [
+            r.first_name, r.last_name, r.email, r.phone || '',
+            r.status,
+            r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR') : '',
+        ].map(v => `"${v ?? ''}"`)
+        )
+    ].map(r => r.join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href     = URL.createObjectURL(new Blob([rows], { type:'text/csv' }));
+    a.download = `inscriptions_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    toast('Export CSV généré !', 'success');
+}
+
+// ── 17. DÉMARRAGE ────────────────────────────────────────────
+setupListeners();
+initAuth();
