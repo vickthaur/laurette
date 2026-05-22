@@ -7,7 +7,7 @@
 // ==========================================
 // 1. SUPABASE & ÉTAT GLOBAL
 // ==========================================
-const SUPABASE_URL  = 'https://lhelfggczeybornhemsf.supabase.co';
+const SUPABASE_URL  = 'https://lhelfggczeybornhemsf.supabase.co/rest/v1/';
 const SUPABASE_KEY  = 'sb_publishable_rvOSgbkjsZRcwGCenkzY_g_5am-b6dk';
 
 let supabase;
