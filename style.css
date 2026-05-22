@@ -1,118 +1,250 @@
 /**
  * ============================================================
- * LAURETTE FUGAIN × BDS — Styles Globaux & Animations
+ * LAURETTE FUGAIN × BDS — Styles v2.0
  * ============================================================
  */
 
-/* Importation de la typographie (Sécurité supplémentaire au cas où le HTML rate) */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ==========================================
+   BASE
+   ========================================== */
+*, *::before, *::after { box-sizing: border-box; }
 
 body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    /* Empêche l'effet de rebond sur Mac/iOS pour faire plus "Application Native" */
-    overscroll-behavior-y: none;
+    overscroll-behavior: none;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
 /* ==========================================
-   SCROLLBARS PERSONNALISÉES
+   SCROLLBARS
    ========================================== */
-   
-/* Scrollbar globale */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-    background-color: #e5e7eb; /* gray-200 */
-    border-radius: 20px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: #d1d5db; /* gray-300 */
-}
-
-/* Scrollbar très discrète pour la Sidebar */
-#sidebar-nav::-webkit-scrollbar {
-    width: 4px;
-}
-#sidebar-nav::-webkit-scrollbar-thumb {
-    background-color: transparent;
-}
-#sidebar-nav:hover::-webkit-scrollbar-thumb {
     background-color: #e5e7eb;
+    border-radius: 20px;
+}
+::-webkit-scrollbar-thumb:hover { background-color: #d1d5db; }
+
+#sidebar-nav::-webkit-scrollbar { width: 3px; }
+#sidebar-nav::-webkit-scrollbar-thumb { background-color: transparent; }
+#sidebar-nav:hover::-webkit-scrollbar-thumb { background-color: #e5e7eb; }
+
+/* ==========================================
+   AUTH BACKGROUND PATTERN
+   ========================================== */
+.auth-bg-pattern {
+    background-image:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 0%, transparent 40%),
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 20px,
+            rgba(255,255,255,0.02) 20px,
+            rgba(255,255,255,0.02) 21px
+        );
+    width: 100%;
+    height: 100%;
 }
 
 /* ==========================================
-   ANIMATIONS & TRANSITIONS UI
+   VIEW TRANSITIONS
    ========================================== */
-
-/* 1. Animation d'entrée des vues (Dashboard, Events, FAQ...) */
 .view-section:not(.hidden) {
-    animation: fadeInSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: fadeInSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes fadeInSlideUp {
-    from {
-        opacity: 0;
-        transform: translateY(12px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
-/* 2. Animations de la Modale (Création d'événement) */
-#modal-event:not(.hidden) #modal-event-backdrop {
-    animation: fadeIn 0.3s ease-out forwards;
+/* ==========================================
+   MODAL ANIMATIONS
+   ========================================== */
+.modal-pop {
+    animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-#modal-event:not(.hidden) .transform {
-    animation: modalPop 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@keyframes modalPop {
+    from { opacity: 0; transform: scale(0.96) translateY(10px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+#modal-event:not(.hidden) #modal-event-backdrop,
+#modal-registration:not(.hidden) #modal-reg-backdrop {
+    animation: fadeIn 0.25s ease-out forwards;
 }
 
 @keyframes fadeIn {
     from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes modalPop {
-    from {
-        opacity: 0;
-        transform: scale(0.95) translateY(15px);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
-}
-
-/* 3. Animation douce pour le texte de la FAQ */
-.faq-content:not(.hidden) {
-    animation: fadeIn 0.25s ease-out forwards;
+    to   { opacity: 1; }
 }
 
 /* ==========================================
-   UTILITAIRES SPECIFIQUES
+   TOAST SYSTEM
    ========================================== */
+.toast-enter {
+    animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
 
-/* Eviter que le texte des boutons soit sélectionnable */
+.toast-exit {
+    animation: toastSlideOut 0.3s ease-in forwards;
+}
+
+@keyframes toastSlideIn {
+    from { opacity: 0; transform: translateX(20px) scale(0.95); }
+    to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes toastSlideOut {
+    from { opacity: 1; transform: translateX(0) scale(1); }
+    to   { opacity: 0; transform: translateX(20px) scale(0.95); }
+}
+
+/* ==========================================
+   PROGRESS BARS
+   ========================================== */
+.progress-bar {
+    transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================
+   BADGES
+   ========================================== */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+/* ==========================================
+   NAV ITEMS
+   ========================================== */
 button, .nav-item {
     user-select: none;
     -webkit-user-select: none;
 }
 
-/* Effet de focus propre (Accessibilité) */
+.nav-item {
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* ==========================================
+   FAQ ANIMATIONS
+   ========================================== */
+.faq-content:not(.hidden) {
+    animation: fadeIn 0.2s ease-out forwards;
+}
+
+.faq-icon {
+    transition: transform 0.2s ease;
+}
+
+/* ==========================================
+   FOCUS STYLES (ACCESSIBILITY)
+   ========================================== */
 *:focus-visible {
     outline: 2px solid #5e227f;
     outline-offset: 2px;
+    border-radius: 4px;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: none;
+}
+
+/* ==========================================
+   SHADOW CARD UTILITY
+   ========================================== */
+.shadow-card {
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.04), 0 2px 8px 0 rgba(0,0,0,0.06);
+}
+
+.shadow-floating {
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.05);
+}
+
+/* ==========================================
+   SPINNER LOADING OVERLAY
+   ========================================== */
+.loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ==========================================
+   TABLE ROW ANIMATIONS
+   ========================================== */
+tbody tr {
+    animation: rowFadeIn 0.25s ease-out both;
+}
+
+tbody tr:nth-child(1)  { animation-delay: 0s; }
+tbody tr:nth-child(2)  { animation-delay: 0.04s; }
+tbody tr:nth-child(3)  { animation-delay: 0.08s; }
+tbody tr:nth-child(4)  { animation-delay: 0.12s; }
+tbody tr:nth-child(5)  { animation-delay: 0.16s; }
+tbody tr:nth-child(6)  { animation-delay: 0.20s; }
+tbody tr:nth-child(7)  { animation-delay: 0.24s; }
+tbody tr:nth-child(8)  { animation-delay: 0.28s; }
+tbody tr:nth-child(9)  { animation-delay: 0.32s; }
+tbody tr:nth-child(10) { animation-delay: 0.36s; }
+
+@keyframes rowFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================
+   AUTH VIEW ANIMATE
+   ========================================== */
+#view-auth:not(.hidden) {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* ==========================================
+   APP SHELL ANIMATE
+   ========================================== */
+#app-shell:not(.hidden) {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* ==========================================
+   SIDEBAR ACTIVE INDICATOR
+   ========================================== */
+.nav-item.bg-laurette-50::before {
+    content: '';
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 16px;
+    background: #5e227f;
+    border-radius: 0 2px 2px 0;
+}
+
+.nav-item {
+    position: relative;
 }
